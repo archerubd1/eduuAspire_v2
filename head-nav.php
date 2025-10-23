@@ -147,13 +147,13 @@
   <a href="#"><span>Resources</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
   <ul>
     <li><a href="blog.php">Blogs & Insights</a></li>
-    <li><a href="#nep-resources.php">NEP 2020 Resources</a></li>
-    <li><a href="#faculty.php">For Faculty</a></li>
-    <li><a href="#students.php">For Students</a></li>
-    <li><a href="#teachers.php">For Teachers</a></li>
+    <li><a href="nep-resources.php">NEP 2020 Resources</a></li>
+    <li><a href="faculty.php">For Faculty</a></li>
+    <li><a href="students.php">For Students</a></li>
+    <li><a href="teachers.php">For Teachers</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><a href="#goa-education.php">Goa Education Hub</a></li>
-    <li><a href="#career-guides.php">Career Guides & Skill Pathways</a></li>
+    <li><a href="goa-education.php">Goa Education Hub</a></li>
+    <li><a href="career-guides.php">Career Guides & Skill Pathways</a></li>
   </ul>
 </li>
 
