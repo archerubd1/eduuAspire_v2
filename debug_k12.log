@@ -378,3 +378,29 @@ Array
 )
 
 
+==== EduuAspire K12 DEBUG (2025-10-23 16:32:30) ====
+Final SQL: SELECT id, name, info, board, course_mode, learners, rating, reviews, assessment_type
+          FROM lessons
+          WHERE active=1 AND publish=1
+          AND board IN ('CBSE','ICSE','Goa Board') ORDER BY learners DESC
+Params (0): Array
+(
+)
+
+Results Found: 18
+
+First Row:
+Array
+(
+    [id] => 6
+    [name] => CBSE Science - Class X Hybrid
+    [info] => Board prep batch focusing on experiments, past papers, and conceptual understanding.
+    [board] => CBSE
+    [course_mode] => Hybrid
+    [learners] => 300
+    [rating] => 4.9
+    [reviews] => 110
+    [assessment_type] => Board Prep Series
+)
+
+
