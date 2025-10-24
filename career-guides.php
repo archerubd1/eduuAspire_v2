@@ -1,5 +1,5 @@
 <?php 
-$page = "home";
+$page = "career";
 include_once('head-nav.php');
 include_once('config.php');
 

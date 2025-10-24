@@ -114,8 +114,8 @@
               <ul>
                 <li><a href="courses-onboarding.php">Onboarding Programs</a></li>
                 <li><a href="courses-professional.php">Professional Skills</a></li>
-                <li><a href="#courses-compliance.php">Compliance & Policies</a></li>
-                <li><a href="#courses-leadership.php">Leadership & Management</a></li>
+                <li><a href="courses-compliance.php">Compliance & Policies</a></li>
+                <li><a href="courses-leadership.php">Leadership & Management</a></li>
               </ul>
             </li>
 
@@ -130,7 +130,7 @@
         </li>
 
         <!-- Instructors -->
-        <li><a href="#instructors.php">Instructors</a></li>
+        <li><a href="instructors.php">Instructors</a></li>
 
         <!-- About Us Dropdown -->
         <li class="dropdown">

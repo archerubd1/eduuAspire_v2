@@ -1,5 +1,5 @@
 <?php 
-$page = "home";
+$page = "goaedu";
 include_once('head-nav.php');
 include_once('config.php');
 

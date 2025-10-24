@@ -13,7 +13,7 @@ if ($coni->connect_error) {
   <!-- Page Title -->
   <div class="page-title light-background">
     <div class="container d-lg-flex justify-content-between align-items-center">
-      <h1 class="mb-2 mb-lg-0">Courses – UG Programs</h1>
+      <h1 class="mb-2 mb-lg-0">Courses – Undergraduate Programs (UG)</h1>
       <nav class="breadcrumbs">
         <ol>
           <li><a href="index.html">Home</a></li>
@@ -27,10 +27,10 @@ if ($coni->connect_error) {
     <div class="container" data-aos="fade-up" data-aos-delay="100">
       <div class="row">
 
-        <!-- Filters -->
+        <!-- Filters Sidebar -->
         <div class="col-lg-3">
           <div class="course-filters" data-aos="fade-right" data-aos-delay="100">
-            <h4 class="filter-title">Filter Courses</h4>
+            <h4 class="filter-title">Filter UG Courses</h4>
 
             <!-- Year -->
             <div class="filter-group">
@@ -55,47 +55,6 @@ if ($coni->connect_error) {
               </div>
             </div>
 
-            <!-- Subjects -->
-            <div class="filter-group">
-              <h5>Subjects</h5>
-              <div class="filter-options">
-                <label class="filter-checkbox"><input type="radio" name="subject" value="All" checked><span class="checkmark"></span>All Subjects</label>
-
-                <h6 class="subject-group text-primary">BCA</h6>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="C-Programming"><span class="checkmark"></span>C Programming</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="DataBase Management System"><span class="checkmark"></span>DBMS</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Software Engineering"><span class="checkmark"></span>Software Engineering</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Java Programming"><span class="checkmark"></span>Java Programming</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Operating System"><span class="checkmark"></span>Operating System</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="AI Basics"><span class="checkmark"></span>AI Basics</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="MAD"><span class="checkmark"></span>Mobile App Dev (MAD)</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Project Management"><span class="checkmark"></span>Project Management</label>
-
-                <h6 class="subject-group text-success">BBA</h6>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Business Environment"><span class="checkmark"></span>Business Environment</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Business Law"><span class="checkmark"></span>Business Law</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Organizational Behavior"><span class="checkmark"></span>Organizational Behavior</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Banking & Finance Service"><span class="checkmark"></span>Banking & Finance</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Human Resource Management"><span class="checkmark"></span>HR Management</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Digital Marketing"><span class="checkmark"></span>Digital Marketing</label>
-
-                <h6 class="subject-group text-danger">BCom</h6>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Financial Accounting"><span class="checkmark"></span>Financial Accounting</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Business Communication"><span class="checkmark"></span>Business Communication</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Business Economics"><span class="checkmark"></span>Business Economics</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Corporate Accounting"><span class="checkmark"></span>Corporate Accounting</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Income Tax"><span class="checkmark"></span>Income Tax</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Marketing Management"><span class="checkmark"></span>Marketing Management</label>
-
-                <h6 class="subject-group text-warning">BA</h6>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Industrial Economics"><span class="checkmark"></span>Industrial Economics</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Managerial Economics"><span class="checkmark"></span>Managerial Economics</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Indian Economics"><span class="checkmark"></span>Indian Economics</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="English"><span class="checkmark"></span>English</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Hindi"><span class="checkmark"></span>Hindi</label>
-              </div>
-            </div>
-
             <!-- Mode -->
             <div class="filter-group">
               <h5>Course Mode</h5>
@@ -113,15 +72,15 @@ if ($coni->connect_error) {
               <div class="filter-options">
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="All" checked><span class="checkmark"></span>All Types</label>
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="Practice Tests"><span class="checkmark"></span>Practice Tests</label>
-                <label class="filter-checkbox"><input type="radio" name="assessment" value="Assignments"><span class="checkmark"></span>Assignments</label>
-                <label class="filter-checkbox"><input type="radio" name="assessment" value="Semester Exams"><span class="checkmark"></span>Semester Exams</label>
+                <label class="filter-checkbox"><input type="radio" name="assessment" value="Monthly Assessments"><span class="checkmark"></span>Monthly Assessments</label>
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="Project"><span class="checkmark"></span>Projects</label>
+                <label class="filter-checkbox"><input type="radio" name="assessment" value="Online Quiz"><span class="checkmark"></span>Online Quiz</label>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Courses -->
+        <!-- Courses Grid -->
         <div class="col-lg-9">
           <div class="courses-header">
             <div class="search-box">
@@ -143,6 +102,7 @@ if ($coni->connect_error) {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   </section>
@@ -161,68 +121,83 @@ if ($coni->connect_error) {
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
-  const filters=document.querySelectorAll(".filter-checkbox input");
-  const searchBox=document.getElementById("searchBox");
-  const sortOrder=document.getElementById("sortOrder");
-  const container=document.getElementById("coursesContainer");
+  const filters = document.querySelectorAll(".filter-checkbox input");
+  const searchBox = document.getElementById("searchBox");
+  const sortOrder = document.getElementById("sortOrder");
+  const container = document.getElementById("coursesContainer");
 
-  function fetchCourses(){
-    const year=document.querySelector('input[name="year"]:checked')?.value||"All";
-    const program=document.querySelector('input[name="program"]:checked')?.value||"All";
-    const subject=document.querySelector('input[name="subject"]:checked')?.value||"All";
-    const mode=document.querySelector('input[name="mode"]:checked')?.value||"All";
-    const assessment=document.querySelector('input[name="assessment"]:checked')?.value||"All";
-    const search=searchBox.value.trim();
-    const sort=sortOrder.value;
+  function fetchCourses() {
+    const year = document.querySelector('input[name="year"]:checked')?.value || "All";
+    const program = document.querySelector('input[name="program"]:checked')?.value || "All";
+    const mode = document.querySelector('input[name="mode"]:checked')?.value || "All";
+    const assessment = document.querySelector('input[name="assessment"]:checked')?.value || "All";
+    const search = searchBox.value.trim();
+    const sort = sortOrder.value;
 
-    fetch("get_courses_ug.php",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded"},
-      body:new URLSearchParams({year,program,subject,mode,assessment,search,sort})
+    // Academic (direction=1), UG (subcategory=4)
+    fetch("get_courses_dynamic.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        direction: 1,
+        subcategory: 4,
+        board: "UG",
+        program,
+        year,
+        mode,
+        assessment,
+        search,
+        sort
+      })
     })
-    .then(res=>res.json())
-    .then(data=>renderCourses(data))
-    .catch(()=>container.innerHTML="<p class='text-center text-danger'>Error loading courses.</p>");
+    .then(res => res.json())
+    .then(data => renderCourses(data))
+    .catch(() => container.innerHTML = "<p class='text-center text-danger'>Error loading courses.</p>");
   }
 
-  function renderCourses(courses){
-    container.innerHTML="";
-    if(!courses||courses.length===0){
-      container.innerHTML='<p class="text-center text-muted py-5">No courses found for selected filters.</p>';
+  function renderCourses(courses) {
+    container.innerHTML = "";
+    if (!courses || courses.length === 0) {
+      container.innerHTML = '<p class="text-center text-muted py-5">No UG programs found for selected filters.</p>';
       return;
     }
-    courses.forEach(course=>{
-      const card=`
+
+    courses.forEach(course => {
+      const card = `
         <div class="col-lg-6 col-md-6 mb-4">
           <div class="course-card">
             <div class="course-image">
               <img src="assets/img/education/courses-3.webp" alt="${course.name}" class="img-fluid">
-              <div class="course-badge">${course.program}</div>
+              <div class="course-badge">${course.board}</div>
               <div class="course-mode">${course.course_mode} Mode</div>
             </div>
             <div class="course-content">
               <div class="course-meta">
-                <span class="category">${course.subject}</span>
-                <span class="level">${course.year}</span>
+                <span class="category">${course.direction_name}</span>
+                <span class="level">${course.assessment_type}</span>
               </div>
               <h3>${course.name}</h3>
-              <p>${course.info ? course.info.substring(0,120)+"..." : ""}</p>
+              <p>${course.info ? course.info.substring(0,120) + '...' : ''}</p>
               <div class="course-stats">
                 <div class="stat"><i class="bi bi-people"></i> ${course.learners} learners</div>
                 <div class="rating"><i class="bi bi-star-fill"></i>${course.rating} (${course.reviews} reviews)</div>
               </div>
-              <a href="enroll.html" class="btn-course">Join Course</a>
+              <div class="course-actions d-flex gap-2">
+                <a href="course-details.php?id=${course.id}" class="btn-course">View Details</a>
+                <a href="enroll.php?id=${course.id}" class="btn-course">Enroll Now</a>
+              </div>
             </div>
           </div>
         </div>`;
-      container.insertAdjacentHTML("beforeend",card);
+      container.insertAdjacentHTML("beforeend", card);
     });
   }
 
-  filters.forEach(f=>f.addEventListener("change",fetchCourses));
-  searchBox.addEventListener("keyup",()=>setTimeout(fetchCourses,500));
-  sortOrder.addEventListener("change",fetchCourses);
-  fetchCourses();
+  filters.forEach(f => f.addEventListener("change", fetchCourses));
+  searchBox.addEventListener("keyup", () => setTimeout(fetchCourses, 500));
+  sortOrder.addEventListener("change", fetchCourses);
+
+  fetchCourses(); // Initial load
 });
 </script>
 

@@ -1,5 +1,5 @@
 <?php 
-$page = "home";
+$page = "nep";
 include_once('head-nav.php');
 include_once('config.php');
 
@@ -39,7 +39,7 @@ if ($coni->connect_error) {
               <span class="category">NEP 2020</span>
             </div>
             <h2 class="post-title">
-              <a href="blog-details.html" title="Key Highlights of NEP 2020">Understanding the Key Highlights of NEP 2020</a>
+              <a href="#blog-details.html" title="Key Highlights of NEP 2020">Understanding the Key Highlights of NEP 2020</a>
             </h2>
           </div>
         </article><!-- End Featured Post -->

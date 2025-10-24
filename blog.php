@@ -64,7 +64,7 @@ if ($coni->connect_error) {
               <span class="badge bg-warning text-dark ms-2">Featured</span>
             </div>
             <h2 class="post-title">
-              <a href="blog-details.html">How EduuAspire’s AI helps learners find the perfect online course</a>
+              <a href="#blog-details.html">How EduuAspire’s AI helps learners find the perfect online course</a>
             </h2>
             <p class="small text-muted mb-0">Discover how EduuAspire’s smart recommendations match students to instructors effortlessly.</p>
           </div>
@@ -79,7 +79,7 @@ if ($coni->connect_error) {
               <span class="category">Marketplace Tips</span>
             </div>
             <h3 class="post-title">
-              <a href="blog-details.html">5 ways to boost visibility for your EduuAspire course</a>
+              <a href="#blog-details.html">5 ways to boost visibility for your EduuAspire course</a>
             </h3>
           </div>
         </article>
@@ -92,7 +92,7 @@ if ($coni->connect_error) {
               <span class="category">Career</span>
             </div>
             <h3 class="post-title">
-              <a href="blog-details.html">From student to seller: how one learner built a full-time business on EduuAspire</a>
+              <a href="#blog-details.html">From student to seller: how one learner built a full-time business on EduuAspire</a>
             </h3>
           </div>
         </article>
@@ -105,7 +105,7 @@ if ($coni->connect_error) {
               <span class="category">Technology</span>
             </div>
             <h3 class="post-title">
-              <a href="blog-details.html">Why EduuAspire Cloud ensures faster, smoother course streaming</a>
+              <a href="#blog-details.html">Why EduuAspire Cloud ensures faster, smoother course streaming</a>
             </h3>
           </div>
         </article>
@@ -118,7 +118,7 @@ if ($coni->connect_error) {
               <span class="category">Programming</span>
             </div>
             <h3 class="post-title">
-              <a href="blog-details.html">Building your first coding course on EduuAspire: step-by-step guide</a>
+              <a href="#blog-details.html">Building your first coding course on EduuAspire: step-by-step guide</a>
             </h3>
           </div>
         </article>
@@ -150,7 +150,7 @@ if ($coni->connect_error) {
             <div class="post-content d-flex flex-column">
               <h3 class="post-title">7 smart marketing ideas for EduuAspire instructors</h3>
               <p class="small text-muted">Use simple strategies to attract students and boost course sales.</p>
-              <a href="blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
+              <a href="#blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
             </div>
           </article>
         </div>
@@ -173,7 +173,7 @@ if ($coni->connect_error) {
             <div class="post-content d-flex flex-column">
               <h3 class="post-title">Pricing your EduuAspire courses for maximum reach</h3>
               <p class="small text-muted">Learn how pricing psychology can increase enrollments.</p>
-              <a href="blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
+              <a href="#blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
             </div>
           </article>
         </div>
@@ -196,7 +196,7 @@ if ($coni->connect_error) {
             <div class="post-content d-flex flex-column">
               <h3 class="post-title">From teacher to EduuAspire top-seller: Maria’s journey</h3>
               <p class="small text-muted">A real story of passion turned into profit through online teaching.</p>
-              <a href="blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
+              <a href="#blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
             </div>
           </article>
         </div>
@@ -219,7 +219,7 @@ if ($coni->connect_error) {
             <div class="post-content d-flex flex-column">
               <h3 class="post-title">How community feedback shapes EduuAspire’s marketplace</h3>
               <p class="small text-muted">Your voice helps us build better learning tools.</p>
-              <a href="blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
+              <a href="#blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
             </div>
           </article>
         </div>
@@ -242,7 +242,7 @@ if ($coni->connect_error) {
             <div class="post-content d-flex flex-column">
               <h3 class="post-title">Using EduuAspire analytics to grow your teaching brand</h3>
               <p class="small text-muted">Track engagement, optimize content, and scale smarter.</p>
-              <a href="blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
+              <a href="#blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
             </div>
           </article>
         </div>
@@ -265,7 +265,7 @@ if ($coni->connect_error) {
             <div class="post-content d-flex flex-column">
               <h3 class="post-title">The future of online education: EduuAspire’s 2025 vision</h3>
               <p class="small text-muted">Where learning meets opportunity for every student and seller.</p>
-              <a href="blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
+              <a href="#blog-details.html" class="readmore stretched-link"><span>Read More</span><i class="bi bi-arrow-right"></i></a>
             </div>
           </article>
         </div>

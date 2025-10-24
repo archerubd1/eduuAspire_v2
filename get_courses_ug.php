@@ -3,6 +3,7 @@
 // EduuAspire UG Dynamic Course Loader (BCA, BBA, BCom, BA)
 // PHP 5.4 compatible | Auto-populates if no UG courses exist
 // -----------------------------------------------------------------------------
+$page="ug";
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 include_once('config.php');

@@ -1,5 +1,5 @@
 <?php 
-$page = "home";
+$page = "puc";
 include_once('head-nav.php');
 include_once('config.php');
 
@@ -54,43 +54,6 @@ if ($coni->connect_error) {
               </div>
             </div>
 
-            <!-- Subjects -->
-            <div class="filter-group">
-              <h5>Subjects</h5>
-              <div class="filter-options">
-
-                <label class="filter-checkbox">
-                  <input type="radio" name="subject" value="All" checked>
-                  <span class="checkmark"></span>All Subjects
-                </label>
-
-                <h6 class="subject-group text-primary">Arts Stream</h6>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="History"><span class="checkmark"></span>History</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Political Science"><span class="checkmark"></span>Political Science</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Economics"><span class="checkmark"></span>Economics</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="English"><span class="checkmark"></span>English</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Hindi"><span class="checkmark"></span>Hindi</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Sociology"><span class="checkmark"></span>Sociology</label>
-
-                <h6 class="subject-group text-success">Commerce Stream</h6>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Accountancy"><span class="checkmark"></span>Accountancy</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Business Studies"><span class="checkmark"></span>Business Studies</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Statistics"><span class="checkmark"></span>Statistics</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Secretarial Practice"><span class="checkmark"></span>Secretarial Practice</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Konkani"><span class="checkmark"></span>Konkani</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Kannada"><span class="checkmark"></span>Kannada</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Marathi"><span class="checkmark"></span>Marathi</label>
-
-                <h6 class="subject-group text-danger">Science Stream</h6>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Physics"><span class="checkmark"></span>Physics</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Chemistry"><span class="checkmark"></span>Chemistry</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Mathematics"><span class="checkmark"></span>Mathematics</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Biology"><span class="checkmark"></span>Biology</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Practical Labs PCMB"><span class="checkmark"></span>Practical Labs (PCMB)</label>
-                <label class="filter-checkbox"><input type="radio" name="subject" value="Science Activities"><span class="checkmark"></span>Science Activities</label>
-              </div>
-            </div>
-
             <!-- Mode -->
             <div class="filter-group">
               <h5>Course Mode</h5>
@@ -109,10 +72,11 @@ if ($coni->connect_error) {
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="All" checked><span class="checkmark"></span>All Types</label>
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="Practice Tests"><span class="checkmark"></span>Practice Tests</label>
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="Monthly Assessments"><span class="checkmark"></span>Monthly Assessments</label>
-                <label class="filter-checkbox"><input type="radio" name="assessment" value="Semester Exams"><span class="checkmark"></span>Semester Exams</label>
-                <label class="filter-checkbox"><input type="radio" name="assessment" value="Labs & Projects"><span class="checkmark"></span>Labs & Projects</label>
+                <label class="filter-checkbox"><input type="radio" name="assessment" value="Project"><span class="checkmark"></span>Projects</label>
+                <label class="filter-checkbox"><input type="radio" name="assessment" value="Exams"><span class="checkmark"></span>Exams</label>
               </div>
             </div>
+
           </div>
         </div>
 
@@ -141,25 +105,10 @@ if ($coni->connect_error) {
 
       </div>
     </div>
-  </section><!-- /Courses Section -->
+  </section>
 </main>
 
-<style>
-.subject-group {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-top: 10px;
-  padding-top: 6px;
-  border-top: 1px solid #eee;
-}
-.subject-group.text-primary { color: #0d6efd; }
-.subject-group.text-success { color: #198754; }
-.subject-group.text-danger { color: #dc3545; }
-</style>
-
+<!-- JS -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const filters = document.querySelectorAll(".filter-checkbox input");
@@ -170,16 +119,26 @@ document.addEventListener("DOMContentLoaded", function () {
   function fetchCourses() {
     const year = document.querySelector('input[name="year"]:checked')?.value || "All";
     const stream = document.querySelector('input[name="stream"]:checked')?.value || "All";
-    const subject = document.querySelector('input[name="subject"]:checked')?.value || "All";
     const mode = document.querySelector('input[name="mode"]:checked')?.value || "All";
     const assessment = document.querySelector('input[name="assessment"]:checked')?.value || "All";
-    const search = searchBox.value.trim().toLowerCase();
+    const search = searchBox.value.trim();
     const sort = sortOrder.value;
 
-    fetch("get_courses_puc.php", {
+    // Academic (direction=1), PUC (subcategory=3)
+    fetch("get_courses_dynamic.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ year, stream, subject, mode, assessment, search, sort })
+      body: new URLSearchParams({
+        direction: 1,
+        subcategory: 3,
+        board: "PUC",       // matches board in lessons table
+        stream,
+        year,
+        mode,
+        assessment,
+        search,
+        sort
+      })
     })
     .then(res => res.json())
     .then(data => renderCourses(data))
@@ -199,13 +158,13 @@ document.addEventListener("DOMContentLoaded", function () {
           <div class="course-card">
             <div class="course-image">
               <img src="assets/img/education/courses-3.webp" alt="${course.name}" class="img-fluid">
-              <div class="course-badge">${course.stream}</div>
-              <div class="course-mode">${course.course_mode.toUpperCase()} Mode</div>
+              <div class="course-badge">${course.board}</div>
+              <div class="course-mode">${course.course_mode} Mode</div>
             </div>
             <div class="course-content">
               <div class="course-meta">
-                <span class="category">${course.subject}</span>
-                <span class="level">${course.year}</span>
+                <span class="category">${course.direction_name}</span>
+                <span class="level">${course.assessment_type}</span>
               </div>
               <h3>${course.name}</h3>
               <p>${course.info ? course.info.substring(0, 120) + '...' : ''}</p>
@@ -213,7 +172,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 <div class="stat"><i class="bi bi-people"></i> ${course.learners} learners</div>
                 <div class="rating"><i class="bi bi-star-fill"></i>${course.rating} (${course.reviews} reviews)</div>
               </div>
-              <a href="enroll.html" class="btn-course">Join Course</a>
+              <div class="course-actions d-flex gap-2">
+                <a href="course-details.php?id=${course.id}" class="btn-course">View Course Details</a>
+                <a href="enroll.php?id=${course.id}" class="btn-course">Enroll Now</a>
+              </div>
             </div>
           </div>
         </div>`;
@@ -224,7 +186,8 @@ document.addEventListener("DOMContentLoaded", function () {
   filters.forEach(f => f.addEventListener("change", fetchCourses));
   searchBox.addEventListener("keyup", () => setTimeout(fetchCourses, 500));
   sortOrder.addEventListener("change", fetchCourses);
-  fetchCourses();
+
+  fetchCourses(); // initial load
 });
 </script>
 

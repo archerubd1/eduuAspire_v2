@@ -1,5 +1,5 @@
 <?php 
-$page = "home";
+$page = "coursek12";
 include_once('head-nav.php');
 include_once('config.php');
 
@@ -77,17 +77,15 @@ if ($coni->connect_error) {
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="Practice Tests"><span class="checkmark"></span>Practice Tests</label>
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="Monthly Assessments"><span class="checkmark"></span>Monthly Assessments</label>
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="Board Prep Series"><span class="checkmark"></span>Board Prep Series</label>
-                <label class="filter-checkbox"><input type="radio" name="assessment" value="Olympic Arts"><span class="checkmark"></span>Olympic Arts (PE)</label>
                 <label class="filter-checkbox"><input type="radio" name="assessment" value="Exams"><span class="checkmark"></span>Exams</label>
               </div>
             </div>
-
-          </div><!-- End Filters -->
+          </div>
         </div>
 
         <!-- Courses -->
         <div class="col-lg-9">
-          <div class="courses-header" data-aos="fade-left" data-aos-delay="100">
+          <div class="courses-header">
             <div class="search-box">
               <i class="bi bi-search"></i>
               <input type="text" id="searchBox" placeholder="Search K-12 courses...">
@@ -101,7 +99,7 @@ if ($coni->connect_error) {
             </div>
           </div>
 
-          <div class="courses-grid" data-aos="fade-up" data-aos-delay="200">
+          <div class="courses-grid">
             <div class="row" id="coursesContainer">
               <div class="text-center py-5 text-muted">Loading courses...</div>
             </div>
@@ -110,10 +108,10 @@ if ($coni->connect_error) {
 
       </div>
     </div>
-  </section><!-- /Courses Section -->
+  </section>
 </main>
 
-<!-- JS: Dynamic Loader -->
+<!-- JS -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const filters = document.querySelectorAll(".filter-checkbox input");
@@ -121,38 +119,32 @@ document.addEventListener("DOMContentLoaded", function () {
   const sortOrder = document.getElementById("sortOrder");
   const container = document.getElementById("coursesContainer");
 
-  function normalize(value) {
-    if (!value) return "";
-    value = value.trim().toLowerCase();
-    if (value.indexOf("cbse") > -1) return "cbse";
-    if (value.indexOf("icse") > -1) return "icse";
-    if (value.indexOf("goa") > -1) return "goa board";
-    if (value.indexOf("spl") > -1) return "spl";
-    if (value.indexOf("ilt") > -1) return "ilt";
-    if (value.indexOf("hybrid") > -1) return "hybrid";
-    if (value.indexOf("practice") > -1) return "practice tests";
-    if (value.indexOf("monthly") > -1) return "monthly assessments";
-    if (value.indexOf("board prep") > -1) return "board prep series";
-    if (value.indexOf("exam") > -1) return "exams";
-    return value;
-  }
-
   function fetchCourses() {
-    const board = normalize(document.querySelector('input[name="board"]:checked')?.value || "All");
-    const classLevel = normalize(document.querySelector('input[name="class"]:checked')?.value || "All");
-    const mode = normalize(document.querySelector('input[name="mode"]:checked')?.value || "All");
-    const assessment = normalize(document.querySelector('input[name="assessment"]:checked')?.value || "All");
-    const search = searchBox.value.trim().toLowerCase();
+    const board = document.querySelector('input[name="board"]:checked')?.value || "All";
+    const classLevel = document.querySelector('input[name="class"]:checked')?.value || "All";
+    const mode = document.querySelector('input[name="mode"]:checked')?.value || "All";
+    const assessment = document.querySelector('input[name="assessment"]:checked')?.value || "All";
+    const search = searchBox.value.trim();
     const sort = sortOrder.value;
 
-    fetch("get_courses.php", {
+    // Academic direction=1, Subcategory=2 (K12)
+    fetch("get_courses_dynamic.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ board, class: classLevel, mode, assessment, search, sort })
+      body: new URLSearchParams({
+        direction: 1,
+        subcategory: 2,
+        board,
+        class: classLevel,
+        mode,
+        assessment,
+        search,
+        sort
+      })
     })
-    .then(res => res.json())
-    .then(data => renderCourses(data))
-    .catch(() => container.innerHTML = "<p class='text-center text-danger'>Error loading courses.</p>");
+      .then(res => res.json())
+      .then(data => renderCourses(data))
+      .catch(() => container.innerHTML = "<p class='text-center text-danger'>Error loading courses.</p>");
   }
 
   function renderCourses(courses) {
@@ -169,22 +161,23 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="course-image">
               <img src="assets/img/education/courses-3.webp" alt="${course.name}" class="img-fluid">
               <div class="course-badge">${course.board}</div>
-              <div class="course-mode">${course.course_mode.toUpperCase()} Mode</div>
+              <div class="course-mode">${course.course_mode} Mode</div>
             </div>
             <div class="course-content">
               <div class="course-meta">
-                <span class="category">${course.academic_level}</span>
+                <span class="category">${course.direction_name}</span>
                 <span class="level">${course.assessment_type}</span>
               </div>
               <h3>${course.name}</h3>
               <p>${course.info ? course.info.substring(0, 120) + '...' : ''}</p>
               <div class="course-stats">
                 <div class="stat"><i class="bi bi-people"></i> ${course.learners} learners</div>
-                <div class="rating">
-                  <i class="bi bi-star-fill"></i>${course.rating} (${course.reviews} reviews)
-                </div>
+                <div class="rating"><i class="bi bi-star-fill"></i>${course.rating} (${course.reviews} reviews)</div>
               </div>
-              <a href="enroll.html" class="btn-course">Join Course</a>
+              <div class="course-actions d-flex gap-2">
+                <a href="course-details.php?id=${course.id}" class="btn-course">View Course Details</a>
+                <a href="enroll.php?id=${course.id}" class="btn-course">Enroll Now</a>
+              </div>
             </div>
           </div>
         </div>`;
@@ -196,7 +189,7 @@ document.addEventListener("DOMContentLoaded", function () {
   searchBox.addEventListener("keyup", () => setTimeout(fetchCourses, 500));
   sortOrder.addEventListener("change", fetchCourses);
 
-  fetchCourses(); // initial load
+  fetchCourses();
 });
 </script>
 
