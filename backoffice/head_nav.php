@@ -108,6 +108,9 @@
         <li class="<?php echo ($fun=='add_course') ? 'menu-item active' : 'menu-item'; ?>">
           <a href="add_course.php" class="menu-link"><div>Add New Course</div></a>
         </li>
+		 <li class="<?php echo ($fun=='lessons') ? 'menu-item active' : 'menu-item'; ?>">
+          <a href="course-lessons.php" class="menu-link"><div>Add Course Lessons</div></a>
+        </li>
         <li class="<?php echo ($fun=='all_courses') ? 'menu-item active' : 'menu-item'; ?>">
           <a href="courses-list.php" class="menu-link"><div>All Courses</div></a>
         </li>
