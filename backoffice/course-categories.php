@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // File: course-categories.php
-// Optimized version with fast query & profiling
+// Realigned DataTable + Inline Add Form Version
 // ============================================
 
 $page = "courses";
@@ -9,44 +9,34 @@ $fun  = "categories";
 include_once('head_nav.php');
 include_once('config.php');
 
-// Enable detailed MySQL errors
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-// Start profiling
-$startTime = microtime(true);
-
-// ===== CATEGORY COUNT =====
-$categoryCount = (int) $coni->query("SELECT COUNT(*) AS cnt FROM directions WHERE active=1")->fetch_assoc()['cnt'];
-
-// ===== PAGINATION SETTINGS =====
-$limit = 25; // items per page
-$pageNo = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
-$offset = ($pageNo - 1) * $limit;
-
-// ===== OPTIMIZED QUERY =====
-$query = "
+// ===== FETCH DATA =====
+$sql = "
   SELECT 
-    d.id,
-    d.name,
-    d.parent_direction_ID,
-    p.name AS parent_name,
-    COUNT(DISTINCT cm.id) AS total_courses,
-    COUNT(DISTINCT l.id) AS total_lessons
+    d.id, d.name, d.direction_type, d.academic_level, d.featured, d.active,
+    p.name AS parent_name
   FROM directions d
-  LEFT JOIN lessons l ON l.directions_ID = d.id
-  LEFT JOIN course_marketplace cm ON cm.lesson_id = l.id
   LEFT JOIN directions p ON p.id = d.parent_direction_ID
-  WHERE d.active = 1
-  GROUP BY d.id, d.name, d.parent_direction_ID, p.name
-  ORDER BY d.name ASC
-  LIMIT $limit OFFSET $offset
+  ORDER BY d.direction_type DESC, d.name ASC
 ";
+$res = $coni->query($sql);
 
-$res = $coni->query($query);
-$queryTime = round((microtime(true) - $startTime) * 1000, 2); // in ms
-
-// ===== TOTAL PAGES =====
-$totalPages = ceil($categoryCount / $limit);
+// ===== RECURSIVE DROPDOWN BUILDER =====
+function buildHierarchy($parent_id = null, $prefix = '') {
+    global $coni;
+    $stmt = $coni->prepare("SELECT id, name FROM directions WHERE parent_direction_ID " . 
+                           (is_null($parent_id) ? "IS NULL" : "= ?") . 
+                           " ORDER BY name ASC");
+    if (!is_null($parent_id)) $stmt->bind_param('i', $parent_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        echo '<option value="' . $row['id'] . '">' . $prefix . htmlspecialchars($row['name']) . '</option>';
+        buildHierarchy($row['id'], $prefix . '→ ');
+    }
+    $stmt->close();
+}
 ?>
 
 <div class="layout-page">
@@ -55,120 +45,161 @@ $totalPages = ceil($categoryCount / $limit);
   <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y">
 
-      <!-- Alerts -->
-      <?php if (isset($_GET['msg'])): ?>
-        <?php if ($_GET['msg'] === 'success'): ?>
-          <div class="alert alert-success">✅ Category added successfully!</div>
-        <?php elseif ($_GET['msg'] === 'error'): ?>
-          <div class="alert alert-danger">❌ Error while adding category. Please try again.</div>
-        <?php endif; ?>
-      <?php endif; ?>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4><i class="bx bx-category me-2"></i> Course Categories</h4>
+      </div>
 
-      <!-- Stats -->
-      <div class="row mb-4">
-        <div class="col-md-4">
-          <div class="card text-center">
-            <div class="card-body">
-              <h5>Total Categories</h5>
-              <h2><?= $categoryCount ?></h2>
+      <!-- INLINE ADD CATEGORY FORM -->
+      <div class="card border-primary mb-4">
+        <div class="card-header bg-primary text-white">
+          <i class="bx bx-plus-circle me-2"></i> Add / Link New Direction
+        </div>
+        <div class="card-body">
+		<p><br></p>
+          <div id="form-msg"></div>
+          <form id="categoryForm">
+            <div class="row mb-3">
+              <div class="col-md-3">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-control" required>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Type</label>
+                <select name="direction_type" class="form-select" required>
+                  <option value="">Select Type</option>
+                  <option value="Category">Category</option>
+                  <option value="Subcategory">Subcategory</option>
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Academic Level</label>
+                <input type="text" name="academic_level" class="form-control" placeholder="e.g. K12, UG, PG">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Parent Direction (optional)</label>
+                <select name="parent_direction_ID" id="parentSelect" class="form-select">
+                  <option value="">None (Top Level)</option>
+                  <?php buildHierarchy(); ?>
+                </select>
+              </div>
             </div>
-          </div>
+
+            <div class="row mb-3">
+              <div class="col-md-3">
+                <label class="form-label">Featured</label>
+                <select name="featured" class="form-select">
+                  <option value="0">No</option>
+                  <option value="1">Yes</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Active</label>
+                <select name="active" class="form-select">
+                  <option value="1">Active</option>
+                  <option value="0">Inactive</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="2"></textarea>
+              </div>
+            </div>
+
+            <div class="text-end">
+              <button type="submit" class="btn btn-success px-4">
+                <i class="bx bx-check-circle me-1"></i> Save
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 
-      <!-- Categories Table -->
-      <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0"><i class="bx bx-category me-2"></i> All Course Categories</h5>
-          <small class="text-muted">Query Time: <?= $queryTime ?> ms</small>
+      <!-- TABLE -->
+      <div class="card">
+        <div class="card-header bg-light">
+          <h5 class="mb-0"><i class="bx bx-table me-2"></i> Directions List</h5>
         </div>
+
         <div class="card-body">
-          <table class="table table-bordered table-striped align-middle">
+          <table id="categoriesTable" class="table table-bordered table-hover align-middle">
             <thead class="table-light">
               <tr>
                 <th>ID</th>
-                <th>Category Name</th>
-                <th>Parent Category</th>
-                <th>Total Marketplace Courses</th>
-                <th>Total Lessons</th>
-                <th>Actions</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Academic Level</th>
+                <th>Parent</th>
+                <th>Featured</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              <?php if ($res->num_rows > 0): ?>
-                <?php while ($row = $res->fetch_assoc()): ?>
-                  <tr>
-                    <td><?= $row['id'] ?></td>
-                    <td><?= htmlspecialchars($row['name']) ?></td>
-                    <td><?= $row['parent_name'] ? htmlspecialchars($row['parent_name']) : "—" ?></td>
-                    <td><?= $row['total_courses'] ?></td>
-                    <td><?= $row['total_lessons'] ?></td>
-                    <td>
-                      <a href="view_category.php?id=<?= $row['id'] ?>" class="btn btn-info btn-sm">
-                        <i class="bx bx-show"></i> View
-                      </a>
-                    </td>
-                  </tr>
-                <?php endwhile; ?>
-              <?php else: ?>
+              <?php while ($row = $res->fetch_assoc()): ?>
                 <tr>
-                  <td colspan="6" class="text-center text-muted">No categories found.</td>
+                  <td><?= $row['id'] ?></td>
+                  <td><?= htmlspecialchars($row['name']) ?></td>
+                  <td><span class="badge bg-info"><?= $row['direction_type'] ?></span></td>
+                  <td><?= htmlspecialchars($row['academic_level']) ?></td>
+                  <td><?= $row['parent_name'] ? htmlspecialchars($row['parent_name']) : "—" ?></td>
+                  <td><?= $row['featured'] ? "⭐" : "—" ?></td>
+                  <td><?= $row['active'] ? "<span class='badge bg-success'>Active</span>" : "<span class='badge bg-danger'>Inactive</span>" ?></td>
                 </tr>
-              <?php endif; ?>
+              <?php endwhile; ?>
             </tbody>
           </table>
-
-          <!-- Pagination -->
-          <nav>
-            <ul class="pagination justify-content-center mt-3">
-              <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <li class="page-item <?= $i === $pageNo ? 'active' : '' ?>">
-                  <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
-                </li>
-              <?php endfor; ?>
-            </ul>
-          </nav>
-        </div>
-      </div>
-
-      <!-- Add Category Form -->
-      <div class="col-xl mt-4">
-        <div class="card mb-4">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bx bx-plus-circle me-2"></i> Add New Category</h5>
-          </div>
-          <div class="card-body">
-            <form action="process-category.php" method="POST">
-              <div class="mb-3">
-                <label class="form-label">Category Name</label>
-                <input type="text" name="name" class="form-control" placeholder="Enter category name" required>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Parent Category</label>
-                <select name="parent_direction_ID" class="form-select">
-                  <option value="">None</option>
-                  <?php
-                  $cats = $coni->query("SELECT id, name FROM directions WHERE active=1 ORDER BY name ASC");
-                  while ($c = $cats->fetch_assoc()):
-                  ?>
-                    <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
-                  <?php endwhile; ?>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Description</label>
-                <textarea name="description" class="form-control" rows="3" placeholder="Enter short description"></textarea>
-              </div>
-              <button type="submit" class="btn btn-primary">
-                <i class="bx bx-check-circle me-1"></i> Save Category
-              </button>
-            </form>
-          </div>
         </div>
       </div>
 
     </div>
-  </div>
+ 
 
-  <?php include_once('footer.php'); ?>
-</div>
+<?php include_once('footer.php'); ?>
+
+<!-- DATATABLES JS & CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+  // Initialize DataTable
+  $('#categoriesTable').DataTable({
+    pageLength: 10,
+    order: [[0, 'asc']],
+    language: { search: "🔍 Search:" }
+  });
+
+  // Auto-change type based on parent
+  $("#parentSelect").on("change", function() {
+    const type = $(this).val() ? "Subcategory" : "Category";
+    $("select[name='direction_type']").val(type);
+  });
+
+  // AJAX form submission
+  $("#categoryForm").on("submit", function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    fetch("ajax_add_category.php", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      const box = $("#form-msg");
+      if (data.success) {
+        box.html('<div class="alert alert-success">✅ ' + data.message + '</div>');
+        setTimeout(() => location.reload(), 800);
+      } else {
+        box.html('<div class="alert alert-danger">❌ ' + data.message + '</div>');
+      }
+    })
+    .catch(err => {
+      $("#form-msg").html('<div class="alert alert-danger">⚠️ Error: ' + err + '</div>');
+    });
+  });
+});
+</script>

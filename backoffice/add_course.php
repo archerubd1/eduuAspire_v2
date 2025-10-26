@@ -1,77 +1,47 @@
 <?php
 $page = "courses";
 $fun  = "add_course";
-
 include_once('head_nav.php');
 include_once('config.php');
 
-// Fetch active categories
-$categories = mysqli_query($coni, "SELECT id, name FROM directions WHERE active=1 ORDER BY name ASC");
+// Fetch top-level categories for initial select (optional)
+// We still load children via ajax_get_children.php but keep top-level for faster display.
+$categories = $coni->query("
+  SELECT id, name 
+  FROM directions 
+  WHERE parent_direction_ID IS NULL AND active=1 
+  ORDER BY name ASC
+");
 
 // Fetch instructors
-$instructors = mysqli_query($coni, "
-    SELECT i.user_login, u.name, u.surname
-    FROM instructors i
-    LEFT JOIN users u ON u.login = i.user_login
-    ORDER BY u.name ASC, u.surname ASC
+$instructors = $coni->query("
+  SELECT user_login, CONCAT(first_name, ' ', last_name) AS fullname, avatar
+  FROM instructors
+  ORDER BY first_name ASC
 ");
 ?>
-
 <div class="layout-page">
   <?php include_once('nav_search.php'); ?>
   <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y">
 
-      <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0"><i class="bx bx-plus-circle me-2"></i> Add New Marketplace Course</h5>
+      <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="bx bx-book-add me-2"></i> Add New Course</h5>
         </div>
+
         <div class="card-body">
-
           <div id="form-msg"></div>
-
           <form id="courseForm" enctype="multipart/form-data" method="post">
-
-            <!-- Course Title -->
-            <div class="mb-3">
-              <label class="form-label">Course Title</label>
-              <input type="text" name="title" class="form-control" required>
-            </div>
-
-            <!-- Subtitle -->
-            <div class="mb-3">
-              <label class="form-label">Subtitle</label>
-              <input type="text" name="subtitle" class="form-control">
-            </div>
-
-            <!-- Description -->
-            <div class="mb-3">
-              <label class="form-label">Description</label>
-              <textarea name="description" class="form-control" rows="4" required></textarea>
-            </div>
-
-            <!-- Duration / Price / Discount -->
+<p><br></p>
+            <!-- Badge + Hierarchy -->
             <div class="row g-3 mb-3">
-              <div class="col-md-4">
-                <label class="form-label">Duration (weeks)</label>
-                <input type="number" name="duration" class="form-control" min="1" required>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Price (₹)</label>
-                <input type="number" step="0.01" name="price" class="form-control" required>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Discount Price (₹)</label>
-                <input type="number" step="0.01" name="discount_price" class="form-control">
-              </div>
-            </div>
-
-            <!-- Badge / Category -->
-            <div class="row g-3 mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Badge</label>
+              <div class="col-md-3">
+                <label class="form-label">
+                  <i class="bx bx-purchase-tag-alt text-primary me-1"></i> Badge
+                </label>
                 <select name="badge" class="form-select" required>
-                  <option value="">Select Badge</option>
+                  <option value="">Select</option>
                   <option value="Featured">Featured</option>
                   <option value="New">New</option>
                   <option value="Popular">Popular</option>
@@ -79,119 +49,171 @@ $instructors = mysqli_query($coni, "
                 </select>
               </div>
 
-              <div class="col-md-6">
-                <label class="form-label">Category</label>
-                <select name="category_id" class="form-select" required>
-                  <option value="">Select Category</option>
-                  <?php
-                  if ($categories && mysqli_num_rows($categories) > 0) {
-                    while ($cat = mysqli_fetch_assoc($categories)) {
-                      echo '<option value="' . $cat['id'] . '">' . htmlspecialchars($cat['name']) . '</option>';
-                    }
-                  }
-                  ?>
-                </select>
+              <div class="col-md-9">
+                <label class="form-label">
+                  <i class="bx bx-sitemap text-primary me-1"></i> Select Course Classification & Offerings Hierarchy
+                </label>
+
+                <!-- Static selects to be filled dynamically via ajax_get_children.php -->
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <select id="categorySelect" class="form-select">
+                      <option value="">Category</option>
+                      <?php if ($categories && $categories->num_rows > 0): ?>
+                        <?php while($c = $categories->fetch_assoc()): ?>
+                          <option value="<?= htmlspecialchars($c['id']) ?>"><?= htmlspecialchars($c['name']) ?></option>
+                        <?php endwhile; ?>
+                      <?php endif; ?>
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <select id="subcategorySelect" class="form-select">
+                      <option value="">Subcategory</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <select id="boardSelect" class="form-select">
+                      <option value="">Board / Program </option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <select id="classSelect" name="direction_id" class="form-select">
+                      <option value="">Class / Level</option>
+                    </select>
+                  </div>
+                </div>
+
               </div>
             </div>
 
-            <!-- Course Mode -->
-            <div class="mb-3">
-              <label class="form-label">Course Mode</label>
-              <select name="course_mode" id="course_mode" class="form-select" required>
-                <option value="">Select Mode</option>
-                <option value="SPL">Self Paced Learning (SPL)</option>
-                <option value="ILT">Instructor Led Training (ILT)</option>
-                <option value="Hybrid">Hybrid (SPL + ILT)</option>
-              </select>
-            </div>
+            <!-- Hidden hierarchy fields expected by backend -->
+            <input type="hidden" name="parent_direction_id" id="hiddenParent" value="">
+            <input type="hidden" name="subcategory_id" id="hiddenSub" value="">
+            <input type="hidden" name="board_name" id="hiddenBoard" value="">
+            <input type="hidden" name="sub_direction_id" id="hiddenClass" value="">
 
             <!-- Course Image -->
             <div class="mb-3">
-              <label class="form-label">Course Image</label>
+              <label class="form-label"><i class="bx bx-image-alt text-primary me-1"></i> Course Image</label>
               <input type="file" name="course_image" class="form-control" accept="image/*">
-              <small class="text-muted">Leave empty to use default image.</small>
             </div>
 
-            <!-- Course Brochure -->
-            <div class="mb-3">
-              <label class="form-label">Course Brochure (optional)</label>
-              <input type="file" name="meta_brochure" class="form-control" accept=".pdf,.doc,.docx">
-              <small class="text-muted">PDF or DOCX. Will be linked on course details page.</small>
+            <!-- Basic Info -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label"><i class="bx bx-book-content text-primary me-1"></i> Course Title</label>
+                <input type="text" name="title" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label"><i class="bx bx-highlight text-primary me-1"></i> Subtitle / USP</label>
+                <input type="text" name="subtitle" class="form-control">
+              </div>
             </div>
 
-            <!-- Instructor Details (shown for ILT/Hybrid) -->
-            <div id="instructorFields" style="display: none;">
-              <hr>
-              <h6>Instructor Details</h6>
-
-              <div class="mb-3">
-                <label class="form-label">Select Instructor</label>
-                <select name="instructor_login" class="form-select">
-                  <option value="">Choose Instructor</option>
-                  <?php
-                  if ($instructors && mysqli_num_rows($instructors) > 0) {
-                    mysqli_data_seek($instructors, 0);
-                    while ($ins = mysqli_fetch_assoc($instructors)) {
-                      $full_name = htmlspecialchars($ins['name'] . " " . $ins['surname']);
-                      echo '<option value="' . htmlspecialchars($ins['user_login']) . '">' . $full_name . ' (' . htmlspecialchars($ins['user_login']) . ')</option>';
-                    }
-                  }
-                  ?>
+            <div class="row g-3 mb-3">
+              <div class="col-md-3">
+                <label class="form-label"><i class="bx bx-time-five text-primary me-1"></i> Duration (weeks)</label>
+                <input type="number" name="duration" class="form-control" min="1" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label"><i class="bx bx-rupee text-primary me-1"></i> Price (₹)</label>
+                <input type="number" step="0.01" name="price" class="form-control" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label"><i class="bx bx-discount text-primary me-1"></i> Discount Price (₹)</label>
+                <input type="number" step="0.01" name="discount_price" class="form-control">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label"><i class="bx bx-chalkboard text-primary me-1"></i> Course Mode</label>
+                <select name="course_mode" id="course_mode" class="form-select" required>
+                  <option value="">Select</option>
+                  <option value="SPL">Self Paced</option>
+                  <option value="ILT">Instructor Led</option>
+                  <option value="Hybrid">Hybrid</option>
                 </select>
               </div>
+            </div>
 
-              <div class="mb-3">
-                <label class="form-label">Specialization</label>
-                <input type="text" name="specialty" class="form-control" placeholder="Enter instructor specialty">
-              </div>
+            <div class="mb-3">
+              <label class="form-label"><i class="bx bx-detail text-primary me-1"></i> Description</label>
+              <textarea name="description" class="form-control" rows="3" required></textarea>
+            </div>
 
-              <div class="mb-3">
-                <label class="form-label">Instructor Avatar (optional)</label>
-                <input type="file" name="instructor_avatar" class="form-control" accept="image/*">
+            <!-- Instructor -->
+            <div id="instructorFields" style="display:none;">
+              <hr>
+              <h6><i class="bx bx-user-voice text-primary me-2"></i> Instructor Details</h6>
+              <div class="row mb-3 align-items-center">
+                <div class="col-md-4">
+                  <label class="form-label"><i class="bx bx-user text-primary me-1"></i> Select Instructor</label>
+                  <select name="instructor_login" id="instructorSelect" class="form-select">
+                    <option value="">Select Instructor</option>
+                    <?php if ($instructors && $instructors->num_rows > 0): ?>
+                      <?php while($i = $instructors->fetch_assoc()): ?>
+                        <option value="<?= htmlspecialchars($i['user_login']) ?>" data-avatar="<?= htmlspecialchars($i['avatar'] ?: 'assets/img/avatars/default.png') ?>">
+                          <?= htmlspecialchars($i['fullname']) ?>
+                        </option>
+                      <?php endwhile; ?>
+                    <?php endif; ?>
+                  </select>
+                </div>
+                <div class="col-md-4 text-center">
+                  <img id="instructorAvatar" src="assets/img/avatars/default.png" class="rounded-circle border" style="width:80px;height:80px;display:none;">
+                  <p id="instructorName" class="mt-2 fw-semibold"></p>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label"><i class="bx bx-user-pin text-primary me-1"></i> Specialization</label>
+                  <input type="text" name="specialty" class="form-control" placeholder="Instructor specialty">
+                </div>
               </div>
             </div>
 
-            <!-- Modules / Lessons Section (dynamic) -->
+            <!-- Lessons & Topics (kept same) -->
             <hr>
-            <h6>Course Lessons (Modules) & Topics</h6>
+            <h6><i class="bx bx-layer text-primary me-2"></i> Lessons & Topics</h6>
             <div id="modulesContainer"></div>
             <button type="button" id="addModuleBtn" class="btn btn-outline-primary mt-2">
-              <i class="bx bx-plus"></i> Add More Lessons
+              <i class="bx bx-plus-circle"></i> Add Lesson
             </button>
 
-            <!-- Course Metadata -->
+            <!-- Brochure & Metadata -->
             <hr>
-            <h6>Course Metadata (for details page)</h6>
-
-            <div class="mb-2">
-              <label class="form-label">Overview</label>
-              <textarea name="meta_overview" class="form-control" rows="3" placeholder="Brief overview"></textarea>
+            <div class="mb-3">
+              <label class="form-label"><i class="bx bx-file text-primary me-1"></i> Brochure (Optional)</label>
+              <input type="file" name="meta_brochure" class="form-control" accept=".pdf,.doc,.docx">
             </div>
 
-            <div class="mb-2">
-              <label class="form-label">Skills (one per line)</label>
-              <textarea name="meta_skills" class="form-control" rows="3" placeholder="One skill per line"></textarea>
+            <h6><i class="bx bx-info-circle text-primary me-2"></i> Additional Info</h6>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label"><i class="bx bx-notepad text-primary me-1"></i> Overview</label>
+                <textarea name="meta_overview" class="form-control" rows="2"></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label"><i class="bx bx-bulb text-primary me-1"></i> Skills</label>
+                <textarea name="meta_skills" class="form-control" rows="2"></textarea>
+              </div>
             </div>
 
-            <div class="mb-2">
-              <label class="form-label">Modules (simple textarea fallback)</label>
-              <textarea name="meta_modules" class="form-control" rows="3" placeholder="Each module on a new line (fallback)"></textarea>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label"><i class="bx bx-target-lock text-primary me-1"></i> Objectives</label>
+                <textarea name="meta_objectives" class="form-control" rows="2"></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label"><i class="bx bx-group text-primary me-1"></i> Target Audience</label>
+                <textarea name="meta_audience" class="form-control" rows="2"></textarea>
+              </div>
             </div>
 
-            <div class="mb-2">
-              <label class="form-label">Learning Objectives</label>
-              <textarea name="meta_objectives" class="form-control" rows="3" placeholder="Learning objectives"></textarea>
+            <div class="text-center mt-4">
+              <button type="submit" class="btn btn-success px-4">
+                <i class="bx bx-check-circle me-2"></i> Save Course
+              </button>
             </div>
-
-            <div class="mb-2">
-              <label class="form-label">Target Audience</label>
-              <textarea name="meta_audience" class="form-control" rows="2" placeholder="Who this course is for"></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary mt-3">
-              <i class="bx bx-check-circle me-1"></i> Save Course
-            </button>
-
           </form>
         </div>
       </div>
@@ -201,73 +223,150 @@ $instructors = mysqli_query($coni, "
   </div>
 </div>
 
-<!-- JS: dynamic modules/topics and ajax submit -->
 <script>
-document.getElementById('course_mode').onchange = function() {
-  var instructorDiv = document.getElementById('instructorFields');
-  instructorDiv.style.display = (this.value === 'ILT' || this.value === 'Hybrid') ? 'block' : 'none';
-};
+// ===== Utility to call ajax_get_children.php and fill a <select> =====
+function loadChildrenAjax(parentId, targetSelect, clearNext) {
+  targetSelect.innerHTML = '<option value="">Loading...</option>';
+  // clear next if provided
+  if (clearNext) clearNext.innerHTML = '<option value="">Select next</option>';
 
-// dynamic modules + topics builder
-var moduleCount = 0;
-document.getElementById('addModuleBtn').onclick = function() {
-  moduleCount++;
-  var container = document.getElementById('modulesContainer');
-  var moduleDiv = document.createElement('div');
-  moduleDiv.className = 'border rounded p-3 mb-3';
-  moduleDiv.setAttribute('data-module', moduleCount);
-  moduleDiv.innerHTML = ''
-    + '<h6>Lesson ' + moduleCount + '</h6>'
-    + '<input type="text" name="modules['+moduleCount+'][title]" class="form-control mb-2" placeholder="Lesson Title" required>'
-    + '<textarea name="modules['+moduleCount+'][description]" class="form-control mb-2" rows="2" placeholder="Lesson Description"></textarea>'
-    + '<div class="topicsContainer" id="topics_' + moduleCount + '"></div>'
-    + '<button type="button" class="btn btn-sm btn-outline-secondary addTopicBtn" data-module="' + moduleCount + '">'
-    + '<i class="bx bx-plus"></i> Add Topic</button>';
-  container.appendChild(moduleDiv);
-};
+  var url = 'ajax_get_children.php?parent_id=' + encodeURIComponent(parentId);
+  fetch(url)
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      targetSelect.innerHTML = '<option value="">Select</option>';
+      if (!data || data.length === 0) {
+        targetSelect.innerHTML = '<option value="">No options</option>';
+        return;
+      }
+      data.forEach(function(item){
+        var opt = document.createElement('option');
+        opt.value = item.id;
+        opt.text = item.name;
+        targetSelect.appendChild(opt);
+      });
+    })
+    .catch(function(err){
+      targetSelect.innerHTML = '<option value="">Error</option>';
+      console.error('loadChildrenAjax error:', err);
+    });
+}
 
-// add topic on click (delegated)
-document.addEventListener('click', function(e) {
-  var el = e.target;
-  while (el && el !== document) {
-    if (el.classList && el.classList.contains('addTopicBtn')) break;
-    el = el.parentNode;
-  }
-  if (!el || el === document) return;
-  var moduleIndex = el.getAttribute('data-module');
-  var topicsDiv = document.getElementById('topics_' + moduleIndex);
-  var count = topicsDiv.children.length + 1;
-  var div = document.createElement('div');
-  div.className = 'input-group mb-2';
-  div.innerHTML = '<span class="input-group-text">Topic ' + count + '</span>'
-    + '<input type="text" name="modules['+moduleIndex+'][topics]['+count+'][title]" class="form-control" placeholder="Topic Title" required>';
-  topicsDiv.appendChild(div);
+// DOM references
+var catSel = document.getElementById('categorySelect');
+var subSel = document.getElementById('subcategorySelect');
+var boardSel = document.getElementById('boardSelect');
+var clsSel = document.getElementById('classSelect');
+
+var hiddenParent = document.getElementById('hiddenParent');
+var hiddenSub = document.getElementById('hiddenSub');
+var hiddenBoard = document.getElementById('hiddenBoard');
+var hiddenClass = document.getElementById('hiddenClass');
+
+// When category changes: set parent, clear downstream, load subcategories
+catSel.addEventListener('change', function(){
+  hiddenParent.value = this.value || '';
+  hiddenSub.value = '';
+  hiddenBoard.value = '';
+  hiddenClass.value = '';
+  subSel.innerHTML = '<option value="">Subcategory</option>';
+  boardSel.innerHTML = '<option value="">Board / Program</option>';
+  clsSel.innerHTML = '<option value="">Class / Level</option>';
+  if (this.value) loadChildrenAjax(this.value, subSel, boardSel);
 });
 
-// AJAX submit using FormData
-document.getElementById("courseForm").onsubmit = function(e) {
-  e.preventDefault();
-  var form = this;
-  var formData = new FormData(form);
-  var msgBox = document.getElementById("form-msg");
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "ajax_add_course.php", true);
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      try {
-        var res = JSON.parse(xhr.responseText);
-        msgBox.innerHTML = '<div class="alert alert-' + (res.success ? 'success' : 'danger') + '">' + res.message + '</div>';
-        if (res.success) {
-          form.reset();
-          document.getElementById('modulesContainer').innerHTML = '';
-          document.getElementById('instructorFields').style.display = 'none';
-          moduleCount = 0;
-        }
-      } catch (err) {
-        msgBox.innerHTML = '<div class="alert alert-danger">Unexpected response from server.</div>';
-      }
+// When subcategory changes: set sub, clear downstream, load boards/programs
+subSel.addEventListener('change', function(){
+  hiddenSub.value = this.value || '';
+  hiddenBoard.value = '';
+  hiddenClass.value = '';
+  boardSel.innerHTML = '<option value="">Board / Program</option>';
+  clsSel.innerHTML = '<option value="">Class / Level</option>';
+  if (this.value) loadChildrenAjax(this.value, boardSel, clsSel);
+});
+
+// When board/program changes: set board name (text) and load classes
+boardSel.addEventListener('change', function(){
+  var selectedText = this.options[this.selectedIndex] ? this.options[this.selectedIndex].text : '';
+  hiddenBoard.value = selectedText || '';
+  hiddenClass.value = '';
+  clsSel.innerHTML = '<option value="">Class / Level</option>';
+  if (this.value) loadChildrenAjax(this.value, clsSel, null);
+});
+
+// When class changes: set final class id
+clsSel.addEventListener('change', function(){
+  hiddenClass.value = this.value || '';
+  // Also set the visible final class select value (name is sent as `direction_id` because earlier code uses that)
+});
+
+// Instructor avatar preview
+var instructorSelect = document.getElementById('instructorSelect');
+if (instructorSelect) {
+  instructorSelect.addEventListener('change', function(e){
+    var opt = this.selectedOptions[0];
+    var avatar = opt ? opt.getAttribute('data-avatar') : '';
+    var img = document.getElementById('instructorAvatar');
+    var name = document.getElementById('instructorName');
+    if (opt && this.value) {
+      img.src = avatar ? avatar : 'assets/img/avatars/default.png';
+      img.style.display = 'inline-block';
+      name.textContent = opt.textContent.trim();
+    } else {
+      img.style.display = 'none';
+      name.textContent = '';
     }
-  };
-  xhr.send(formData);
-};
+  });
+}
+
+// Course mode toggles instructor block
+var cm = document.getElementById('course_mode');
+if (cm) {
+  cm.addEventListener('change', function(){
+    document.getElementById('instructorFields').style.display = (this.value === 'ILT' || this.value === 'Hybrid') ? 'block' : 'none';
+  });
+}
+
+// Modules/Topics (same behaviour you already had)
+var moduleCount = 0;
+document.getElementById('addModuleBtn').addEventListener('click', function(){
+  moduleCount++;
+  var c = document.getElementById('modulesContainer');
+  var m = document.createElement('div');
+  m.className = 'border rounded p-3 mb-3';
+  m.innerHTML = '<h6><i class="bx bx-book-content text-primary"></i> Lesson '+moduleCount+'</h6>'
+    + '<input type="text" name="modules['+moduleCount+'][title]" class="form-control mb-2" placeholder="Lesson title" required>'
+    + '<textarea name="modules['+moduleCount+'][description]" class="form-control mb-2" rows="2" placeholder="Lesson description"></textarea>'
+    + '<div id="topics_'+moduleCount+'"></div>'
+    + '<button type="button" class="btn btn-sm btn-outline-secondary addTopicBtn" data-module="'+moduleCount+'"><i class="bx bx-plus"></i> Add Topic</button>';
+  c.appendChild(m);
+});
+document.addEventListener('click', function(e){
+  if (e.target.classList && e.target.classList.contains('addTopicBtn')) {
+    var i = e.target.getAttribute('data-module');
+    var t = document.getElementById('topics_'+i);
+    var count = t.children.length + 1;
+    var div = document.createElement('div');
+    div.className = 'input-group mb-2';
+    div.innerHTML = '<span class="input-group-text">Topic '+count+'</span>'
+      + '<input type="text" name="modules['+i+'][topics]['+count+'][title]" class="form-control" placeholder="Topic title" required>';
+    t.appendChild(div);
+  }
+});
+
+// AJAX submit (FormData automatically includes hidden fields)
+document.getElementById('courseForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var fd = new FormData(this);
+  fetch('ajax_add_course.php', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      document.getElementById('form-msg').innerHTML = '<div class="alert alert-'+(res.success ? 'success' : 'danger')+'">'+res.message+'</div>';
+      if (res.success) document.getElementById('courseForm').reset();
+    })
+    .catch(function(err){
+      document.getElementById('form-msg').innerHTML = '<div class="alert alert-danger">Error: '+ err +'</div>';
+      console.error('submit error', err);
+    });
+});
 </script>

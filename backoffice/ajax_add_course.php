@@ -1,184 +1,155 @@
 <?php
+// ajax_add_course.php — PHP 5.4 compatible, clean JSON output
+
 include_once('config.php');
 header('Content-Type: application/json');
-error_reporting(E_ALL & ~E_NOTICE);
 
-// Basic validation
-if (!isset($_POST['title']) || trim($_POST['title']) == '') {
-    echo json_encode(array("success" => false, "message" => "Course title is required."));
-    exit;
-}
+// Turn off on-screen errors (to prevent <br/> output in JSON)
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/ajax_add_course_errors.log');
 
-// sanitize inputs
-$title        = mysqli_real_escape_string($coni, trim($_POST['title']));
-$subtitle     = mysqli_real_escape_string($coni, trim($_POST['subtitle']));
-$description  = mysqli_real_escape_string($coni, trim($_POST['description']));
-$duration     = intval($_POST['duration']);
-$price        = floatval($_POST['price']);
-$discount     = isset($_POST['discount_price']) ? floatval($_POST['discount_price']) : 0.00;
-$badge        = mysqli_real_escape_string($coni, trim($_POST['badge']));
-$category_id  = intval($_POST['category_id']);
-$course_mode  = mysqli_real_escape_string($coni, trim($_POST['course_mode']));
-$creator      = isset($_POST['instructor_login']) ? mysqli_real_escape_string($coni, trim($_POST['instructor_login'])) : '';
-$specialty    = isset($_POST['specialty']) ? mysqli_real_escape_string($coni, trim($_POST['specialty'])) : '';
+// helper
+function safe($k) { return isset($_POST[$k]) ? trim($_POST[$k]) : ''; }
 
-$meta_overview   = isset($_POST['meta_overview']) ? mysqli_real_escape_string($coni, trim($_POST['meta_overview'])) : '';
-$meta_skills     = isset($_POST['meta_skills']) ? mysqli_real_escape_string($coni, trim($_POST['meta_skills'])) : '';
-$meta_objectives = isset($_POST['meta_objectives']) ? mysqli_real_escape_string($coni, trim($_POST['meta_objectives'])) : '';
-$meta_audience   = isset($_POST['meta_audience']) ? mysqli_real_escape_string($coni, trim($_POST['meta_audience'])) : '';
-$meta_modules    = isset($_POST['meta_modules']) ? mysqli_real_escape_string($coni, trim($_POST['meta_modules'])) : '';
+try {
+    // === INPUTS ===
+    $title          = safe('title');
+    $subtitle       = safe('subtitle');
+    $description    = safe('description');
+    $duration       = isset($_POST['duration']) ? (int) $_POST['duration'] : 0;
+    $price          = isset($_POST['price']) ? (float) $_POST['price'] : 0.0;
+    $discount_price = isset($_POST['discount_price']) ? (float) $_POST['discount_price'] : 0.0;
+    $badge          = safe('badge');
+    $course_mode    = safe('course_mode');
+    $specialty      = safe('specialty');
+    $instructor     = safe('instructor_login');
 
-$modules_post = isset($_POST['modules']) ? $_POST['modules'] : array();
+    // Hierarchy
+    $parent_direction_id = isset($_POST['parent_direction_id']) ? (int) $_POST['parent_direction_id'] : 0; 
+    $subcategory_id      = isset($_POST['subcategory_id']) ? (int) $_POST['subcategory_id'] : 0;         
+    $board_name          = safe('board_name'); 
+    $class_direction_id  = isset($_POST['sub_direction_id']) ? (int) $_POST['sub_direction_id'] : 0; 
 
-// upload root
-$root_upload_dir = dirname(__DIR__) . "/uploads/";
-if (!is_dir($root_upload_dir)) mkdir($root_upload_dir, 0777, true);
+    // Meta
+    $meta_overview   = safe('meta_overview');
+    $meta_skills     = safe('meta_skills');
+    $meta_objectives = safe('meta_objectives');
+    $meta_audience   = safe('meta_audience');
+    $modules         = isset($_POST['modules']) ? $_POST['modules'] : array();
 
-// -------------------- course image --------------------
-$course_image = "assets/img/education/default-course.webp";
-if (isset($_FILES['course_image']) && $_FILES['course_image']['error'] == UPLOAD_ERR_OK) {
-    $course_dir = $root_upload_dir . "courses/";
-    if (!is_dir($course_dir)) mkdir($course_dir, 0777, true);
-    $filename = time() . "_" . preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($_FILES['course_image']['name']));
-    $target = $course_dir . $filename;
-    if (move_uploaded_file($_FILES['course_image']['tmp_name'], $target)) {
-        $course_image = "uploads/courses/" . $filename;
+    if ($title == '' || $parent_direction_id == 0) {
+        throw new Exception("Missing mandatory fields: title / hierarchy.");
     }
-}
 
-// -------------------- brochure upload --------------------
-$brochure_path = NULL;
-$brochure_type = NULL;
-if (isset($_FILES['meta_brochure']) && $_FILES['meta_brochure']['error'] == UPLOAD_ERR_OK) {
-    $brochure_dir = $root_upload_dir . "brochures/";
-    if (!is_dir($brochure_dir)) mkdir($brochure_dir, 0777, true);
-    $filename = time() . "_" . preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($_FILES['meta_brochure']['name']));
-    $target = $brochure_dir . $filename;
-    if (move_uploaded_file($_FILES['meta_brochure']['tmp_name'], $target)) {
-        $brochure_path = "uploads/brochures/" . $filename;
-        $brochure_type = pathinfo($filename, PATHINFO_EXTENSION);
-    }
-}
+    // === UPLOADS ===
+    $uploadDir = dirname(__DIR__) . '/uploads/courses/';
+    if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-// require instructor for ILT/Hybrid
-if (($course_mode == 'ILT' || $course_mode == 'Hybrid') && empty($creator)) {
-    echo json_encode(array("success" => false, "message" => "Instructor is required for ILT or Hybrid courses."));
-    exit;
-}
+    $course_image = '';
+    $meta_brochure = '';
 
-// create modules and content tables if not exist
-$create_modules_sql = "
-CREATE TABLE IF NOT EXISTS modules (
-  id INT(11) AUTO_INCREMENT PRIMARY KEY,
-  course_id INT(11) NOT NULL,
-  module_title VARCHAR(255) NOT NULL,
-  module_description TEXT,
-  module_order INT(11) DEFAULT 0,
-  created INT(11) DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-";
-mysqli_query($coni, $create_modules_sql);
-
-$create_content_sql = "
-CREATE TABLE IF NOT EXISTS content (
-  id INT(11) AUTO_INCREMENT PRIMARY KEY,
-  module_id INT(11) NOT NULL,
-  topic_title VARCHAR(255) NOT NULL,
-  topic_description TEXT,
-  topic_order INT(11) DEFAULT 0,
-  created INT(11) DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-";
-mysqli_query($coni, $create_content_sql);
-
-// -------------------- insert into lessons --------------------
-$created_time = time();
-$creator_sql = ($creator != '') ? "'" . mysqli_real_escape_string($coni, $creator) . "'" : "NULL";
-
-$lesson_sql = "
-INSERT INTO lessons
-(name, info, duration, price, directions_ID, creator_LOGIN, active, show_catalog, publish, created, course_mode)
-VALUES
-('".$title."', '".$description."', ".$duration.", ".$price.", ".($category_id>0 ? $category_id : "NULL").", ".$creator_sql.", 1, 1, 1, ".$created_time.", '".$course_mode."')
-";
-if (!mysqli_query($coni, $lesson_sql)) {
-    echo json_encode(array("success" => false, "message" => "Error saving lesson: " . mysqli_error($coni)));
-    exit;
-}
-$lesson_id = mysqli_insert_id($coni);
-
-// -------------------- insert into course_marketplace --------------------
-$market_sql = "
-INSERT INTO course_marketplace (lesson_id, subtitle, price, discount_price, badge, image, is_active)
-VALUES (".$lesson_id.", '".$subtitle."', ".$price.", ".$discount.", '".$badge."', '".$course_image."', 1)
-";
-if (!mysqli_query($coni, $market_sql)) {
-    echo json_encode(array("success" => false, "message" => "Error saving marketplace data: " . mysqli_error($coni)));
-    exit;
-}
-
-// -------------------- insert into course_metadata --------------------
-$brochure_path_sql = ($brochure_path !== NULL) ? "'".mysqli_real_escape_string($coni, $brochure_path)."'" : "NULL";
-$brochure_type_sql = ($brochure_type !== NULL) ? "'".mysqli_real_escape_string($coni, $brochure_type)."'" : "NULL";
-
-$meta_sql = "
-INSERT INTO course_metadata (course_id, overview, modules, skills, objectives, audience, brochure_path, brochure_type)
-VALUES (".$lesson_id.", '".$meta_overview."', '".mysqli_real_escape_string($coni, $meta_modules)."', '".$meta_skills."', '".$meta_objectives."', '".$meta_audience."', ".$brochure_path_sql.", ".$brochure_type_sql.")
-";
-if (!mysqli_query($coni, $meta_sql)) {
-    echo json_encode(array("success" => false, "message" => "Error saving metadata: " . mysqli_error($coni)));
-    exit;
-}
-
-// -------------------- ensure instructor exists or update --------------------
-if ($creator != '') {
-    // optional instructor avatar upload was handled in form-> instructor_avatar - but not mandatory
-    // If instructors table missing, assume exists per your schema; otherwise create minimal row
-    $checkInstr = mysqli_query($coni, "SELECT id, avatar, specialty FROM instructors WHERE user_login='".mysqli_real_escape_string($coni, $creator)."' LIMIT 1");
-    if (mysqli_num_rows($checkInstr) == 0) {
-        mysqli_query($coni, "INSERT INTO instructors (user_login, specialty, avatar, rating, total_reviews, active) VALUES ('".mysqli_real_escape_string($coni, $creator)."', '".$specialty."', 'assets/img/person/default-avatar.webp', 4.5, 0, 1)");
-    } else {
-        $existing = mysqli_fetch_assoc($checkInstr);
-        $updateParts = array();
-        if ($specialty != '' && $specialty != $existing['specialty']) {
-            $updateParts[] = "specialty='".$specialty."'";
-        }
-        if (count($updateParts) > 0) {
-            mysqli_query($coni, "UPDATE instructors SET ".implode(',', $updateParts)." WHERE user_login='".mysqli_real_escape_string($coni, $creator)."' LIMIT 1");
+    if (isset($_FILES['course_image']) && $_FILES['course_image']['name'] != '') {
+        $imgName = time() . '_' . preg_replace('/[^A-Za-z0-9.\-_]/', '', $_FILES['course_image']['name']);
+        if (move_uploaded_file($_FILES['course_image']['tmp_name'], $uploadDir . $imgName)) {
+            $course_image = 'uploads/courses/' . $imgName;
         }
     }
-}
 
-// -------------------- modules & topics insertion --------------------
-if (is_array($modules_post) && count($modules_post) > 0) {
-    foreach ($modules_post as $m_key => $m_data) {
-        if (!is_array($m_data)) continue;
-        $m_title = isset($m_data['title']) ? mysqli_real_escape_string($coni, trim($m_data['title'])) : '';
-        $m_desc  = isset($m_data['description']) ? mysqli_real_escape_string($coni, trim($m_data['description'])) : '';
-        if ($m_title == '') continue;
-        $module_order = intval($m_key);
-        $ins_m_sql = "INSERT INTO modules (course_id, module_title, module_description, module_order, created) VALUES (".$lesson_id.", '".$m_title."', '".$m_desc."', ".$module_order.", ".time().")";
-        if (mysqli_query($coni, $ins_m_sql)) {
-            $module_id = mysqli_insert_id($coni);
-            if (isset($m_data['topics']) && is_array($m_data['topics'])) {
-                foreach ($m_data['topics'] as $t_key => $t_data) {
-                    if (!is_array($t_data)) continue;
-                    $t_title = isset($t_data['title']) ? mysqli_real_escape_string($coni, trim($t_data['title'])) : '';
-                    if ($t_title == '') continue;
-                    $topic_order = intval($t_key);
-                    $ins_t_sql = "INSERT INTO content (module_id, topic_title, topic_description, topic_order, created)
-                                  VALUES (".$module_id.", '".$t_title."', '', ".$topic_order.", ".time().")";
-                    mysqli_query($coni, $ins_t_sql);
+    if (isset($_FILES['meta_brochure']) && $_FILES['meta_brochure']['name'] != '') {
+        $broName = time() . '_' . preg_replace('/[^A-Za-z0-9.\-_]/', '', $_FILES['meta_brochure']['name']);
+        if (move_uploaded_file($_FILES['meta_brochure']['tmp_name'], $uploadDir . $broName)) {
+            $meta_brochure = 'uploads/courses/' . $broName;
+        }
+    }
+
+    $created_time = time();
+
+    // === LESSONS TABLE ===
+    $stmt = $coni->prepare("
+        INSERT INTO lessons
+        (name, info, duration, price, direction_id, sub_direction_id, board, creator_LOGIN,
+         active, show_catalog, publish, created, course_mode)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', 1, 1, 1, ?, ?)
+    ");
+    if (!$stmt) throw new Exception('Prepare failed (lessons): ' . $coni->error);
+
+    $stmt->bind_param(
+        'ssdiissis',
+        $title, $description, $duration, $price,
+        $parent_direction_id, $subcategory_id, $board_name, $created_time, $course_mode
+    );
+    $stmt->execute();
+    $lesson_id = $stmt->insert_id;
+    $stmt->close();
+
+    // === COURSE MARKETPLACE ===
+    $stmt2 = $coni->prepare("
+        INSERT INTO course_marketplace
+        (lesson_id, subtitle, price, discount_price, badge, image, featured, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, 'No', 1)
+    ");
+    if (!$stmt2) throw new Exception('Prepare failed (course_marketplace): ' . $coni->error);
+    $stmt2->bind_param('isddss', $lesson_id, $subtitle, $price, $discount_price, $badge, $course_image);
+    $stmt2->execute();
+    $stmt2->close();
+
+    // === COURSE METADATA ===
+    $bro_type = $meta_brochure ? pathinfo($meta_brochure, PATHINFO_EXTENSION) : '';
+    $stmt3 = $coni->prepare("
+        INSERT INTO course_metadata
+        (course_id, overview, skills, objectives, audience, brochure_path, brochure_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+    if (!$stmt3) throw new Exception('Prepare failed (course_metadata): ' . $coni->error);
+    $stmt3->bind_param('issssss', $lesson_id, $meta_overview, $meta_skills, $meta_objectives, $meta_audience, $meta_brochure, $bro_type);
+    $stmt3->execute();
+    $stmt3->close();
+
+    // === MODULES & CONTENT ===
+    if (is_array($modules) && count($modules) > 0) {
+        $stmtMod = $coni->prepare("INSERT INTO modules (course_id, module_title, module_description, created) VALUES (?, ?, ?, ?)");
+        $stmtTopic = $coni->prepare("INSERT INTO content (module_id, topic_title, topic_description, topic_order, created) VALUES (?, ?, ?, ?, ?)");
+
+        if ($stmtMod && $stmtTopic) {
+            foreach ($modules as $m) {
+                $mod_title = isset($m['title']) ? trim($m['title']) : '';
+                $mod_desc  = isset($m['description']) ? trim($m['description']) : '';
+                if ($mod_title == '') continue;
+                $stmtMod->bind_param('issi', $lesson_id, $mod_title, $mod_desc, $created_time);
+                $stmtMod->execute();
+                $module_id = $stmtMod->insert_id;
+
+                if (isset($m['topics']) && is_array($m['topics'])) {
+                    $order = 1;
+                    foreach ($m['topics'] as $t) {
+                        $topic_title = isset($t['title']) ? trim($t['title']) : '';
+                        if ($topic_title == '') continue;
+                        $stmtTopic->bind_param('issii', $module_id, $topic_title, $mod_desc, $order, $created_time);
+                        $stmtTopic->execute();
+                        $order++;
+                    }
                 }
             }
+            $stmtMod->close();
+            $stmtTopic->close();
         }
     }
-}
 
-// success
-echo json_encode(array(
-    "success" => true,
-    "message" => "✅ Course '" . $title . "' (" . $course_mode . ") added successfully!"
-));
-exit;
+    // === ASSIGN INSTRUCTOR ===
+    if ($instructor != '' && ($course_mode == 'ILT' || $course_mode == 'Hybrid')) {
+        $stmt4 = $coni->prepare("INSERT INTO users_to_lessons (user_login, lesson_id, user_type) VALUES (?, ?, 'instructor')");
+        if ($stmt4) {
+            $stmt4->bind_param('si', $instructor, $lesson_id);
+            $stmt4->execute();
+            $stmt4->close();
+        }
+    }
+
+    echo json_encode(array('success' => true, 'message' => '✅ Course successfully saved with hierarchy, modules & instructor.'));
+
+} catch (Exception $e) {
+    echo json_encode(array('success' => false, 'message' => '❌ Error: ' . $e->getMessage()));
+}
 ?>

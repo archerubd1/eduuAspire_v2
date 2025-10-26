@@ -1,151 +1,139 @@
 <?php
 $page = "instructors";
-$fun  = "view_ins";
+$fun  = "view";
 
 include_once('head_nav.php');
 include_once('config.php');
 
-// --- Get instructor ID safely ---
-$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-if ($id <= 0) {
-    die("<div class='alert alert-danger'>Invalid instructor ID.</div>");
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+  die("<div class='alert alert-danger m-3'>Invalid instructor ID.</div>");
 }
 
-// --- Fetch instructor info ---
-$sql = "
-SELECT i.id, i.user_login, i.avatar, i.specialty, i.rating, i.total_reviews,
-       u.name, u.surname, u.email, u.avatar AS user_avatar
-FROM instructors i
-LEFT JOIN users u ON u.login = i.user_login
-WHERE i.id = $id
-LIMIT 1
-";
+$id = (int)$_GET['id'];
 
-$res = mysqli_query($coni, $sql);
-if (!$res || mysqli_num_rows($res) == 0) {
-    die("<div class='alert alert-warning'>Instructor not found.</div>");
+$query = $coni->prepare("
+  SELECT i.*, p.qualification, p.experience_years, p.languages_known, p.achievements, 
+         p.linkedin_url, p.facebook_url, p.youtube_url, p.bio, p.location, p.office_hours, p.website
+  FROM instructors i
+  LEFT JOIN instructor_profiles p ON i.id = p.instructor_id
+  WHERE i.id = ?
+");
+$query->bind_param("i", $id);
+$query->execute();
+$result = $query->get_result();
+$ins = $result->fetch_assoc();
+$query->close();
+
+if (!$ins) {
+  die("<div class='alert alert-danger m-3'>Instructor not found.</div>");
 }
-$ins = mysqli_fetch_assoc($res);
-
-// --- Avatar handling ---
-$photo = "assets/img/person/default-avatar.webp";
-if (!empty($ins['avatar'])) {
-    if (strpos($ins['avatar'], 'uploads/') === 0) {
-        $photo = "../" . $ins['avatar'];
-    } else {
-        $photo = $ins['avatar'];
-    }
-} elseif (!empty($ins['user_avatar'])) {
-    if (strpos($ins['user_avatar'], 'uploads/') === 0) {
-        $photo = "../" . $ins['user_avatar'];
-    } else {
-        $photo = $ins['user_avatar'];
-    }
-}
-
-// --- Full name fallback ---
-$fullname = trim($ins['name'] . " " . $ins['surname']);
-if ($fullname == "") $fullname = $ins['user_login'];
-
-// --- Basic info ---
-$specialty = !empty($ins['specialty']) ? htmlspecialchars($ins['specialty']) : "—";
-$rating = isset($ins['rating']) ? number_format($ins['rating'], 1) : "4.5";
-$reviews = isset($ins['total_reviews']) ? (int)$ins['total_reviews'] : 0;
-
-// --- Fetch courses by this instructor ---
-$courses_sql = "
-SELECT l.id, l.name, l.info, l.duration,
-       cm.price, cm.discount_price, cm.badge, cm.image
-FROM lessons l
-LEFT JOIN course_marketplace cm ON cm.lesson_id = l.id
-WHERE l.creator_LOGIN = '" . mysqli_real_escape_string($coni, $ins['user_login']) . "'
-ORDER BY l.id DESC
-";
-$courses_res = mysqli_query($coni, $courses_sql);
 ?>
 
 <div class="layout-page">
   <?php include_once('nav_search.php'); ?>
-
   <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5><i class="bx bx-user me-2"></i> Instructor Details</h5>
+          <div>
+            <a href="instructors-list.php" class="btn btn-sm btn-secondary me-2">
+              <i class="bx bx-arrow-back"></i> Back
+            </a>
 
-      <div class="card mb-4">
-        <div class="card-body text-center">
-          <img src="<?php echo htmlspecialchars($photo); ?>" alt="Instructor Photo" width="120" height="120" class="rounded-circle border mb-3">
-          <h3><?php echo htmlspecialchars($fullname); ?></h3>
-          <p class="text-muted">@<?php echo htmlspecialchars($ins['user_login']); ?></p>
-          <p><strong>Specialty:</strong> <?php echo $specialty; ?></p>
-          <p><i class="bx bx-star text-warning"></i> <?php echo $rating; ?> (<?php echo $reviews; ?> reviews)</p>
-          <?php if (!empty($ins['email'])): ?>
-            <p><i class="bx bx-envelope"></i> <?php echo htmlspecialchars($ins['email']); ?></p>
-          <?php endif; ?>
-          <a href="instructors-list.php" class="btn btn-secondary mt-2"><i class="bx bx-arrow-back"></i> Back to List</a>
-        </div>
-      </div>
+            <a href="edit_instructor.php?id=<?php echo $ins['id']; ?>" class="btn btn-sm btn-warning me-2">
+              <i class="bx bx-edit-alt"></i> Edit
+            </a>
 
-      <!-- Courses by Instructor -->
-      <div class="card">
-        <div class="card-header">
-          <h5><i class="bx bx-book me-2"></i> Courses by <?php echo htmlspecialchars($fullname); ?></h5>
+            <?php if ($ins['status'] == 'active'): ?>
+              <button class="btn btn-sm btn-danger" onclick="toggleInstructorStatus(<?php echo $ins['id']; ?>)">
+                <i class="bx bx-block"></i> Suspend
+              </button>
+            <?php else: ?>
+              <button class="btn btn-sm btn-success" onclick="toggleInstructorStatus(<?php echo $ins['id']; ?>)">
+                <i class="bx bx-refresh"></i> Reactivate
+              </button>
+            <?php endif; ?>
+          </div>
         </div>
+
         <div class="card-body">
-          <?php
-          if ($courses_res && mysqli_num_rows($courses_res) > 0) {
-              echo '<div class="table-responsive">
-                      <table class="table table-striped table-bordered align-middle">
-                        <thead class="table-light">
-                          <tr>
-                            <th>ID</th>
-                            <th>Image</th>
-                            <th>Course Title</th>
-                            <th>Duration</th>
-                            <th>Price</th>
-                            <th>Badge</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>';
-              while ($c = mysqli_fetch_assoc($courses_res)) {
+          <div class="row mb-3">
+            <div class="col-md-3 text-center">
+              <img src="<?php echo htmlspecialchars($ins['avatar']); ?>" class="rounded-circle mb-3" width="120" height="120">
+              <h6><?php echo htmlspecialchars($ins['first_name'] . ' ' . $ins['last_name']); ?></h6>
+              <p class="text-muted"><?php echo htmlspecialchars($ins['specialty']); ?></p>
 
-                  // Fix image path
-                  $img = "assets/img/education/default-course.webp";
-                  if (!empty($c['image'])) {
-                      if (strpos($c['image'], 'uploads/') === 0) {
-                          $img = "../" . $c['image'];
-                      } else {
-                          $img = $c['image'];
-                      }
-                  }
+              <?php
+                if ($ins['status'] == 'active')
+                  echo '<span class="badge bg-success">Active</span>';
+                elseif ($ins['status'] == 'suspended')
+                  echo '<span class="badge bg-danger">Suspended</span>';
+                else
+                  echo '<span class="badge bg-secondary">Inactive</span>';
+              ?>
 
-                  $price_html = "₹" . number_format($c['price'], 2);
-                  if (!empty($c['discount_price']) && $c['discount_price'] > 0) {
-                      $price_html = "<span class='text-muted text-decoration-line-through'>₹" . number_format($c['price'], 2) . "</span> 
-                                     <strong>₹" . number_format($c['discount_price'], 2) . "</strong>";
-                  }
+              <?php if ($ins['verified']): ?>
+                <span class="badge bg-primary ms-1">Verified</span>
+              <?php endif; ?>
+            </div>
 
-                  echo '
-                    <tr>
-                      <td>' . $c['id'] . '</td>
-                      <td><img src="' . htmlspecialchars($img) . '" alt="Course" width="80" height="60" class="rounded"></td>
-                      <td><strong>' . htmlspecialchars($c['name']) . '</strong><br><small>' . htmlspecialchars(substr($c['info'], 0, 60)) . '...</small></td>
-                      <td>' . intval($c['duration']) . ' weeks</td>
-                      <td>' . $price_html . '</td>
-                      <td>' . htmlspecialchars($c['badge']) . '</td>
-                      <td>
-                        <a href="course-details.php?course=' . $c['id'] . '" class="btn btn-sm btn-info"><i class="bx bx-show"></i></a>
-                      </td>
-                    </tr>';
-              }
-              echo '</tbody></table></div>';
-          } else {
-              echo '<div class="alert alert-warning text-center">No courses found for this instructor.</div>';
-          }
-          ?>
+            <div class="col-md-9">
+              <h6>Contact Info</h6>
+              <p><strong>Email:</strong> <?php echo htmlspecialchars($ins['email']); ?></p>
+              <p><strong>Mobile:</strong> <?php echo htmlspecialchars($ins['mobile']); ?></p>
+              <p><strong>Location:</strong> <?php echo htmlspecialchars($ins['location']); ?></p>
+              <hr>
+
+              <h6>Professional Details</h6>
+              <p><strong>Qualification:</strong> <?php echo htmlspecialchars($ins['qualification']); ?></p>
+              <p><strong>Experience:</strong> <?php echo (int)$ins['experience_years']; ?> years</p>
+              <p><strong>Languages:</strong> <?php echo htmlspecialchars($ins['languages_known']); ?></p>
+              <p><strong>Achievements:</strong><br><?php echo nl2br(htmlspecialchars($ins['achievements'])); ?></p>
+              <hr>
+
+              <h6>Additional Info</h6>
+              <p><strong>Office Hours:</strong> <?php echo htmlspecialchars($ins['office_hours']); ?></p>
+              <p><strong>Bio:</strong><br><?php echo nl2br(htmlspecialchars($ins['bio'])); ?></p>
+              <p><strong>Website:</strong> <a href="<?php echo htmlspecialchars($ins['website']); ?>" target="_blank"><?php echo htmlspecialchars($ins['website']); ?></a></p>
+              <p><strong>LinkedIn:</strong> <a href="<?php echo htmlspecialchars($ins['linkedin_url']); ?>" target="_blank"><?php echo htmlspecialchars($ins['linkedin_url']); ?></a></p>
+              <p><strong>Facebook:</strong> <a href="<?php echo htmlspecialchars($ins['facebook_url']); ?>" target="_blank"><?php echo htmlspecialchars($ins['facebook_url']); ?></a></p>
+              <p><strong>YouTube:</strong> <a href="<?php echo htmlspecialchars($ins['youtube_url']); ?>" target="_blank"><?php echo htmlspecialchars($ins['youtube_url']); ?></a></p>
+              <hr>
+
+              <p><strong>Rating:</strong> <?php echo number_format($ins['rating'], 1); ?> ⭐</p>
+              <p><strong>Total Students:</strong> <?php echo (int)$ins['total_students']; ?></p>
+              <p><strong>Active Courses:</strong> <?php echo (int)$ins['active_courses']; ?></p>
+              <p><strong>Reviews:</strong> <?php echo (int)$ins['total_reviews']; ?></p>
+              <hr>
+
+              <p class="text-muted"><strong>Last Updated:</strong>
+                <?php echo htmlspecialchars($ins['last_updated']); ?>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-
     </div>
     <?php include_once('footer.php'); ?>
   </div>
 </div>
+
+<script>
+function toggleInstructorStatus(id) {
+  const confirmMsg = "Are you sure you want to change this instructor's status?";
+  if (!confirm(confirmMsg)) return;
+
+  fetch("ajax_toggle_instructor_status.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "id=" + id
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(data.message);
+    if (data.success) location.reload();
+  })
+  .catch(err => alert("Error: " + err));
+}
+</script>

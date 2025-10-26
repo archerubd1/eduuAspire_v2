@@ -1,177 +1,120 @@
 <?php
-// get_courses_dynamic.php
-// Universal course loader — PHP 5.4 compatible version
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
 include_once('config.php');
+header('Content-Type: application/json; charset=utf-8');
 
-// helper: normalise input safely (PHP 5.4)
-function norm_trim_lower($k) {
-    if (!isset($_POST[$k])) return '';
-    return strtolower(trim($_POST[$k]));
+// Ensure charset consistency
+$coni->set_charset("utf8mb4");
+$coni->query("SET collation_connection='utf8mb4_unicode_ci'");
+
+function norm($k) {
+  return isset($_POST[$k]) ? strtolower(trim($_POST[$k])) : '';
 }
 
-// capture POST (PHP 5.4 safe)
 $direction   = isset($_POST['direction']) ? intval($_POST['direction']) : 0;
 $subcategory = isset($_POST['subcategory']) ? intval($_POST['subcategory']) : 0;
-$board       = norm_trim_lower('board');
-$class       = norm_trim_lower('class');
-$mode        = norm_trim_lower('mode');
-$assessment  = norm_trim_lower('assessment');
-$search      = norm_trim_lower('search');
-$sort        = norm_trim_lower('sort');
+$board       = norm('board');
+$class       = norm('class');
+$mode        = norm('mode');
+$assessment  = norm('assessment');
+$year        = norm('year');
+$program     = norm('program');
+$search      = norm('search');
+$sort        = norm('sort');
 if ($sort === '') $sort = 'popular';
 
-// debug switch (use GET debug=1 to see SQL & params)
-$debug = (isset($_GET['debug']) && $_GET['debug'] == '1') ? true : false;
-
-// base query
+// Base query
 $query = "
-  SELECT 
-    l.id, l.name, l.info, l.board, l.course_mode, l.assessment_type,
-    l.learners, l.rating, l.reviews, 
-    d.name AS direction_name, sd.name AS sub_direction_name
-  FROM lessons l
-  LEFT JOIN directions d ON l.direction_id = d.id
-  LEFT JOIN directions sd ON l.sub_direction_id = sd.id
-  WHERE l.active = 1 AND l.publish = 1
+SELECT 
+  l.id, l.name, l.info, l.board, l.course_mode, l.assessment_type,
+  l.learners, l.rating, l.reviews, l.price,
+  d.name AS direction_name, sd.name AS sub_direction_name,
+  cm.badge, cm.image,
+  CONCAT(i.first_name, ' ', i.last_name) AS instructor_name,
+  i.avatar AS instructor_avatar
+FROM lessons l
+LEFT JOIN directions d ON l.direction_id = d.id
+LEFT JOIN directions sd ON l.sub_direction_id = sd.id
+LEFT JOIN course_marketplace cm ON cm.lesson_id = l.id
+LEFT JOIN users_to_lessons ul ON ul.lessons_id = l.id
+LEFT JOIN instructors i ON i.user_login = ul.users_login
+WHERE l.active = 1 AND l.publish = 1
 ";
 
-$params = array();
+$params = [];
 $types  = '';
 
-// apply numeric filters
+function addCondition(&$query, &$params, &$types, $condition, $values, $isInt = false) {
+  $query .= " " . $condition;
+  foreach ($values as $v) {
+    $params[] = $v;
+    $types   .= $isInt ? 'i' : 's';
+  }
+}
+
+// Filters
 if ($direction > 0) {
-    $query .= " AND l.direction_id = ?";
-    $params[] = $direction;
-    $types .= 'i';
+  $query .= " AND l.direction_id = ?";
+  $params[] = $direction;
+  $types .= 'i';
 }
-
 if ($subcategory > 0) {
-    $query .= " AND l.sub_direction_id = ?";
-    $params[] = $subcategory;
-    $types .= 'i';
+  $query .= " AND l.sub_direction_id = ?";
+  $params[] = $subcategory;
+  $types .= 'i';
+}
+if ($board && $board !== 'all') addCondition($query, $params, $types, "AND LOWER(l.board) = ?", [$board]);
+if ($class && $class !== 'all') addCondition($query, $params, $types, "AND (LOWER(l.name) LIKE ? OR LOWER(l.info) LIKE ?)", ["%$class%", "%$class%"]);
+if ($mode && $mode !== 'all') addCondition($query, $params, $types, "AND LOWER(l.course_mode) = ?", [$mode]);
+if ($assessment && $assessment !== 'all') addCondition($query, $params, $types, "AND LOWER(l.assessment_type) = ?", [$assessment]);
+if ($year && $year !== 'all') addCondition($query, $params, $types, "AND (LOWER(l.name) LIKE ? OR LOWER(l.info) LIKE ?)", ["%$year%", "%$year%"]);
+if ($program && $program !== 'all') addCondition($query, $params, $types, "AND (LOWER(l.name) LIKE ? OR LOWER(l.board) LIKE ?)", ["%$program%", "%$program%"]);
+if ($search) addCondition($query, $params, $types, "AND (LOWER(l.name) LIKE ? OR LOWER(l.info) LIKE ?)", ["%$search%", "%$search%"]);
+
+switch ($sort) {
+  case 'newest': $query .= " ORDER BY l.id DESC"; break;
+  case 'rating': $query .= " ORDER BY l.rating DESC"; break;
+  default:       $query .= " ORDER BY l.learners DESC"; break;
 }
 
-// board exact match (case-insensitive)
-if ($board !== '' && $board !== 'all' && $board !== 'all boards') {
-    $query .= " AND LOWER(l.board) = ?";
-    $params[] = $board;
-    $types .= 's';
-}
-
-// class filter: for K-12 we match class text inside name or info (e.g. "Class X")
-if ($class !== '' && $class !== 'all' && $class !== 'all classes') {
-    // use LIKE on name OR info
-    $query .= " AND (LOWER(l.name) LIKE ? OR LOWER(l.info) LIKE ?)";
-    $like = '%' . $class . '%';
-    $params[] = $like;
-    $params[] = $like;
-    $types .= 'ss';
-}
-
-// course mode
-if ($mode !== '' && $mode !== 'all' && $mode !== 'all modes') {
-    $query .= " AND LOWER(l.course_mode) = ?";
-    $params[] = $mode;
-    $types .= 's';
-}
-
-// assessment type
-if ($assessment !== '' && $assessment !== 'all' && $assessment !== 'all types') {
-    $query .= " AND LOWER(l.assessment_type) = ?";
-    $params[] = $assessment;
-    $types .= 's';
-}
-
-// search across name/info
-if ($search !== '') {
-    $query .= " AND (LOWER(l.name) LIKE ? OR LOWER(l.info) LIKE ?)";
-    $s_like = '%' . $search . '%';
-    $params[] = $s_like;
-    $params[] = $s_like;
-    $types .= 'ss';
-}
-
-// sorting
-if ($sort === 'newest') {
-    $query .= " ORDER BY l.created DESC";
-} else if ($sort === 'rating') {
-    $query .= " ORDER BY l.rating DESC";
-} else {
-    $query .= " ORDER BY l.learners DESC";
-}
-
-// debug: return SQL & params (useful during development)
-if ($debug) {
-    header('Content-Type: application/json');
-    echo json_encode(array(
-        'sql' => $query,
-        'types' => $types,
-        'params' => $params
-    ));
-    exit;
-}
-
-// prepare
 $stmt = $coni->prepare($query);
 if (!$stmt) {
-    header('Content-Type: application/json');
-    echo json_encode(array('error' => 'SQL Prepare failed: ' . $coni->error));
-    exit;
+  echo json_encode(["error" => "SQL prepare failed", "detail" => $coni->error, "query" => $query]);
+  exit;
 }
 
-// bind params if any (PHP 5.4 style)
+// Bind params safely (PHP 7 compatible)
 if (!empty($params)) {
-    // build array of references
-    $bind_names = array();
-    $bind_names[] = $types;
-    for ($i = 0; $i < count($params); $i++) {
-        // create variable variables and bind by reference
-        $bind_name = 'bind' . $i;
-        $$bind_name = $params[$i];
-        $bind_names[] = &$$bind_name;
-    }
-    call_user_func_array(array($stmt, 'bind_param'), $bind_names);
+  $bind_names[] = $types;
+  for ($i = 0; $i < count($params); $i++) {
+    $bind_name = 'bind' . $i;
+    $$bind_name = $params[$i];
+    $bind_names[] = &$$bind_name;
+  }
+  call_user_func_array([$stmt, 'bind_param'], $bind_names);
 }
 
-// execute
-$exec_ok = $stmt->execute();
-if (!$exec_ok) {
-    header('Content-Type: application/json');
-    echo json_encode(array('error' => 'Execute failed: ' . $stmt->error));
-    exit;
+// Execute query
+if (!$stmt->execute()) {
+  echo json_encode(["error" => "Execution failed", "detail" => $stmt->error]);
+  exit;
 }
 
-// fetch results: prefer get_result, fallback to bind_result
-$courses = array();
-if (method_exists($stmt, 'get_result')) {
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $courses[] = $row;
-    }
+$result = $stmt->get_result();
+$courses = [];
+while ($r = $result->fetch_assoc()) {
+  $r['image'] = $r['image'] ?: 'assets/img/education/default-course.webp';
+  $r['instructor_avatar'] = (!empty($r['instructor_avatar']) && file_exists("backoffice/" . $r['instructor_avatar']))
+    ? "backoffice/" . $r['instructor_avatar']
+    : "assets/img/avatars/default.png";
+  $courses[] = $r;
+}
+
+// Output
+if (empty($courses)) {
+  echo json_encode(["message" => "No courses found", "filters" => $_POST]);
 } else {
-    // fallback for older drivers
-    $meta = $stmt->result_metadata();
-    if ($meta) {
-        $fields = array();
-        $row = array();
-        while ($field = $meta->fetch_field()) {
-            $fields[] = &$row[$field->name];
-        }
-        call_user_func_array(array($stmt, 'bind_result'), $fields);
-        while ($stmt->fetch()) {
-            // copy values (to avoid reference issues)
-            $r = array();
-            foreach ($row as $k => $v) $r[$k] = $v;
-            $courses[] = $r;
-        }
-    }
+  echo json_encode($courses);
 }
-
-// output JSON
-header('Content-Type: application/json');
-echo json_encode($courses);
-exit;
 ?>

@@ -101,7 +101,7 @@
             <li class="dropdown">
               <a href="#"><span>Academia</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
               <ul>
-                <li><a href="courses-k12.php">K-12 (School)</a></li>
+                <li><a href="coursesk12.php">K-12 (School)</a></li>
                 <li><a href="courses-puc.php">PUC / Higher Secondary</a></li>
                 <li><a href="courses-ug.php">Undergraduate (UG)</a></li>
                 <li><a href="#courses-pg.php">Postgraduate (PG)</a></li>
@@ -112,10 +112,10 @@
             <li class="dropdown">
               <a href="#"><span>Corporate</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
               <ul>
-                <li><a href="courses-onboarding.php">Onboarding Programs</a></li>
-                <li><a href="courses-professional.php">Professional Skills</a></li>
-                <li><a href="courses-compliance.php">Compliance & Policies</a></li>
-                <li><a href="courses-leadership.php">Leadership & Management</a></li>
+                <li><a href="#courses-onboarding.php">Onboarding Programs</a></li>
+                <li><a href="#courses-professional.php">Professional Skills</a></li>
+                <li><a href="#courses-compliance.php">Compliance & Policies</a></li>
+                <li><a href="#courses-leadership.php">Leadership & Management</a></li>
               </ul>
             </li>
 

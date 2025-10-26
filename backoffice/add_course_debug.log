@@ -1,0 +1,43 @@
+[2025-10-25 18:06:07] ===== NEW REQUEST =====
+[2025-10-25 18:06:07] POST: Array
+(
+    [title] => rerr
+    [description] => rerewew
+    [direction_id] => 1
+    [sub_direction_id] => 2
+    [board] => rewew
+    [course_mode] => SPL
+    [assessment_type] => rewew
+    [duration] => 43
+    [price] => 43
+    [rating] => 4.5
+    [learners] => 43
+    [creator_LOGIN] => 
+    [active] => 1
+)
+
+[2025-10-25 18:06:07] FILES: Array
+(
+    [image] => Array
+        (
+            [name] => avatar-male.png
+            [type] => image/png
+            [tmp_name] => C:\Users\manas\AppData\Local\Temp\php2666.tmp
+            [error] => 0
+            [size] => 30656
+        )
+
+)
+
+[2025-10-25 18:06:07] SQL: INSERT INTO lessons 
+        (name, course_code, info, duration, learners, rating, reviews, price, course_type, 
+         direction_id, sub_direction_id, board, creator_LOGIN, active, show_catalog, publish, created, course_mode, delivery_type, assessment_type)
+        VALUES (
+          'rerr', '', 'rerewew', 43, 43, 4.5, 0, 43, 'Paid',
+          1, 2, 'rewew', '', 1, 1, 1, 1761395767, 'SPL', 'Online', 'rewew'
+        )
+[2025-10-25 18:06:07] Inserted lesson_id = 13
+[2025-10-25 18:06:07] SQL2: INSERT INTO course_marketplace (lesson_id, subtitle, badge, image, discount_price) VALUES (13, '', '', 'backoffice/uploads/courses/1761395767_avatar-male.png', 0.00)
+[2025-10-25 18:06:07] Inserted course_marketplace id: 2
+[2025-10-25 18:06:07] SQL3: INSERT INTO course_metadata (course_id, overview, modules, skills, objectives, audience) VALUES (13, '', '', '', '', '')
+[2025-10-25 18:06:07] Inserted course_metadata id: 1
