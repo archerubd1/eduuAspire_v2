@@ -15,7 +15,7 @@ if ($is_localhost) {
     $db_host   = 'localhost';
     $db_name   = 'eduuaspire';                               // ✅ New DB name
     $db_user   = 'root';
-    $db_pass   = 'root';                                          // Usually blank on UwAmp/XAMPP
+    $db_pass   = '';                                          // Usually blank on UwAmp/XAMPP
 } else {
     // ✅ Live server details
     $base_url  = 'https://www.eduuaspire.online';
