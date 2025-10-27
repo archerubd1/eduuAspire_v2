@@ -186,18 +186,24 @@ document.addEventListener("DOMContentLoaded", function(){
             <div class='course-image position-relative'>
               <img src='${img}' alt='${c.name}'>
               ${badge}
-              <div class='course-mode'>${c.course_mode || ''}</div>
+              
+
+			   
             </div>
             <div class='course-content p-3'>
               ${hierarchy}
+			  <div class='course-mode' style="display: flex; justify-content: space-between; align-items: center;">
+  <span>${c.course_mode || ''}</span>
+  <span class='text-success fw-bold'>₹${c.price}</span>
+</div>
               <h5 class='fw-bold mt-2'>${c.name}</h5>
               <p class='text-muted small'>${c.info?.substring(0,120) || ''}...</p>
               ${instructor}
               <div class='d-flex justify-content-between align-items-center mt-3'>
-                <span class='text-success fw-bold'>₹${c.price}</span>
+               
                 <div>
-                  <a href='course-details.php?id=${c.id}' class='btn btn-outline-primary btn-sm me-2'>View</a>
-                  <a href='enroll.php?id=${c.id}' class='btn btn-primary btn-sm'>Enroll</a>
+                  <a href='course-details.php?id=${c.id}' class='btn-course btn-outline-primary btn-sm me-2'>View Course Details</a>
+                  <a href='enroll.php?id=${c.id}' class='btn-course btn-primary btn-sm'>Enroll This Course</a>
                 </div>
               </div>
             </div>

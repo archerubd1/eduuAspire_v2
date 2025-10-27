@@ -335,7 +335,8 @@ if ($mod_r && mysqli_num_rows($mod_r) > 0) {
               </div>
 
               <div class="action-buttons mt-3">
-                <button class="btn btn-primary w-100 mb-2">Enroll Now</button>
+                <a href="enroll.php?id=<?php echo $course_id; ?>" class="btn btn-primary w-100 mb-2">Enroll Now</a>
+
                 <?php if ($brochure): ?>
                   <a href="<?php echo htmlspecialchars($brochure); ?>" class="btn btn-outline-secondary w-100" download><i class="bi bi-file-earmark-arrow-down me-1"></i> Download Brochure</a>
                 <?php else: ?>
