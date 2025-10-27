@@ -67,16 +67,60 @@
   </div>
   <div class="menu-inner-shadow"></div>
 
+
+<P><br><br></p>
 <?php if (($page!='login') && ($fun!='login')) { ?>
 <ul class="menu-inner py-1">
 
-    <!-- Dashboard -->
-    <li class="<?php echo ($page=='dashboard') ? 'menu-item active' : 'menu-item'; ?>">
-      <a href="admin-dashboard.php" class="menu-link">
-        <i class="menu-icon tf-icons bx bx-home-circle"></i>
-        <div>Dashboard</div>
+    
+  <!-- Marketplace -->
+<li class="<?php echo ($page=='marketplace') ? 'menu-item open active' : 'menu-item'; ?>">
+  <a href="javascript:void(0);" class="menu-link menu-toggle">
+    <i class="menu-icon tf-icons bx bx-store-alt"></i>
+    <div>Marketplace</div>
+  </a>
+  <ul class="menu-sub">
+
+    <li class="<?php echo ($fun=='market_dashboard') ? 'menu-item active' : 'menu-item'; ?>">
+      <a href="marketplace-dashboard.php" class="menu-link">
+        <div>Marketplace Overview</div>
       </a>
     </li>
+
+    <li class="<?php echo ($fun=='market_courses') ? 'menu-item active' : 'menu-item'; ?>">
+      <a href="marketplace-courses.php" class="menu-link">
+        <div>Manage Courses</div>
+      </a>
+    </li>
+
+    <li class="<?php echo ($fun=='market_reviews') ? 'menu-item active' : 'menu-item'; ?>">
+      <a href="marketplace-reviews.php" class="menu-link">
+        <div>Reviews & Ratings</div>
+      </a>
+    </li>
+
+    <li class="<?php echo ($fun=='market_promotions') ? 'menu-item active' : 'menu-item'; ?>">
+      <a href="marketplace-promotions.php" class="menu-link">
+        <div>Promotions & Coupons</div>
+      </a>
+    </li>
+
+    <li class="<?php echo ($fun=='market_banners') ? 'menu-item active' : 'menu-item'; ?>">
+      <a href="marketplace-banners.php" class="menu-link">
+        <div>Banners & Highlights</div>
+      </a>
+    </li>
+
+    <li class="<?php echo ($fun=='market_settings') ? 'menu-item active' : 'menu-item'; ?>">
+      <a href="marketplace-settings.php" class="menu-link">
+        <div>Settings & Policies</div>
+      </a>
+    </li>
+
+  </ul>
+</li>
+  
+
 	
 	
 	
@@ -118,9 +162,7 @@
       </ul>
     </li>
 
-   
-    
-
+  
    
 
 </ul>

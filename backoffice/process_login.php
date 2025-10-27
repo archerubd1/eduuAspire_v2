@@ -36,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $_SESSION['message']    = "Login successful!";
             $_SESSION['msg_type']   = "success";
 
-            header("Location: admin-dashboard.php");
+            header("Location: marketplace-dashboard.php");
             exit();
         } else {
             $_SESSION['message']  = "Invalid password.";
