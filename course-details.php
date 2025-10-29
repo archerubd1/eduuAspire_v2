@@ -55,7 +55,7 @@ WHERE l.id = " . intval($course_id) . "
 LIMIT 1
 ";
 
-$res = mysqli_query($coni, $sql);
+$res = msqli_query($coni, $sql);
 if (!$res) {
     die('<div class="container mt-5"><div class="alert alert-danger">SQL Error: ' . mysqli_error($coni) . '</div></div>');
 }
